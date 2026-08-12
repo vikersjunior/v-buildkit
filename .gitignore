@@ -20,3 +20,11 @@ npm-debug.log*
 *.swp
 *.swo
 *.tgz
+
+# Audit & Release Reports
+README-AUDIT.md
+RELEASE-GATE.md
+RELEASE-*.md
+TRUSTED-PUBLISHING-SETUP.md
+PRODUCTION-AUDIT.md
+*-AUDIT.md
