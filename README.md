@@ -333,6 +333,18 @@ npm pack --dry-run
 
 ---
 
+## Releasing
+
+Releases are published through GitHub Actions using npm Trusted Publishing (OIDC).
+
+Pushing a version tag (e.g. `v2.4.1`) triggers:
+
+1. Code checkout and Node.js setup
+2. Automated test suite execution (`npm test`)
+3. Provenance-backed npm publication (`npm publish --provenance`)
+
+---
+
 ## License
 
 Viker's BuildKit is licensed under the [MIT License](LICENSE).
