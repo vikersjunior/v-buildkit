@@ -1,0 +1,16 @@
+---
+name: distill-skill
+description: Use this at the end of a project or a major phase, or whenever explicitly invoked via "/distill-skill", "capture what we learned", or "turn this project's lessons into a reusable skill". Distills hard-won, transferable lessons from a completed project into a standalone SKILL.md so the next similar project starts from where this one finished.
+---
+
+This skill exists because the six spec files capture *what was decided*, not *what was learned the hard way getting there* — things like "this API's public-preview CLI doesn't yet support resource X, fall back to CloudFormation for that specific piece" or "this auth property can't be changed in place, plan for it upfront." That kind of operational knowledge is exactly what's worth carrying forward, and exactly what gets lost if it only lives in chat history.
+
+1. Read `Progress.md`'s "Decisions Made" and "Known Issues" sections, and `architecture.md`'s ADR log, for the full history of this project.
+2. If a session/prompt log exists (e.g. a `logs/` folder with per-phase or per-task entries — see the optional logging convention below), read it too — raw session logs often surface workarounds and gotchas that never made it into `Progress.md`'s terser entries, since they capture the actual back-and-forth of solving a problem, not just the final decision.
+3. Identify the lessons that are **specific enough to be non-obvious but general enough to apply to a future, different project** — not "we chose Postgres" (that's just a Tech_stack.md fact, not a lesson), but "this cloud provider's CLI, at time of writing, didn't support configuration X — needed CloudFormation for that piece specifically" or "authorizer type can't be changed in place, decide it before first deploy." Skip anything too project-specific to transfer (e.g. this exact product's business logic).
+4. If genuine, transferable lessons exist, propose a new skill: draft a `SKILL.md` (using skill-creator conventions — clear frontmatter description stating exactly when to trigger it, plus a body of concrete guidance and failure modes to avoid) scoped to the specific domain the lessons apply to (e.g. "aws-agentcore-gateway-deploys," not a vague "lessons-learned"). Do not create a skill from a project that didn't produce any genuinely reusable insight — an empty or trivial skill just adds noise to future context.
+5. Present the drafted skill to the user for review before it's saved anywhere permanent — this is a proposal, not an automatic action.
+
+## Optional: keeping a session log to make this skill more effective
+
+This is opt-in, not required by the rest of the kit. If you want richer material for `/distill-skill` to work from, keep a running log per phase or per hard problem — e.g. `logs/phase-2-auth.md` — capturing what was tried, what failed, and what worked, as it happens, rather than trying to reconstruct it from memory at project end. A single line per notable event is enough ("tried X, hit Y limitation, fell back to Z because..."). This is a much lower-effort habit than it sounds — it pays for itself specifically at `/distill-skill` time, where "what actually happened" material produces sharper, more specific skills than post-hoc summarization from `Progress.md` alone.

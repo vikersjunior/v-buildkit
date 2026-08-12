@@ -1,0 +1,39 @@
+{
+  "name": "vikers-buildkit",
+  "version": "2.4.0",
+  "description": "Viker's BuildKit \u2014 agent-aware spec-driven development and company-building workflow kit.",
+  "bin": {
+    "vikers-buildkit": "bin/vikers-buildkit.js",
+    "v-buildkit": "bin/vikers-buildkit.js",
+    "viker-buildkit": "bin/vikers-buildkit.js"
+  },
+  "files": [
+    "bin/",
+    "install.sh",
+    ".claude/",
+    ".buildkit/",
+    "skills-library/",
+    "templates/",
+    "README.md",
+    "V2-CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vikersjunior/v-buildkit.git"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "coding-agent",
+    "developer-tools",
+    "spec-driven-development",
+    "claude-code",
+    "codex",
+    "cursor",
+    "gemini"
+  ]
+}
