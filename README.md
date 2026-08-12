@@ -129,7 +129,7 @@ Supported native mappings:
 
 | Agent | Native skills directory |
 |---|---|
-| Claude Code | the selected agent's native skills directory |
+| Claude Code | `.claude/skills/` |
 | Codex CLI / Antigravity | `.agents/skills/` |
 | Cursor | `.cursor/skills/` |
 | Gemini CLI | `.gemini/skills/` |
@@ -145,10 +145,19 @@ Supported native mappings:
 For multiple agents, `--link` creates `.buildkit/workflow-skills/` as the single BuildKit workflow source and symlinks each selected native skills directory to it. This is especially useful when the same repository is worked on by several coding agents.
 
 ```bash
-./install.sh /path/to/your-project --agent claude,codex,cursor --link
+npx vikers-buildkit install . --agent claude,codex,cursor --link
 ```
 
 `--link` never replaces an existing native skills directory. Move it first if you want a clean shared source. The old Claude+Antigravity-only `--agent both` shortcut is replaced by generalized comma-separated agent selection. Use `--no-detect` when you explicitly do not want the installer to inspect the project/environment for agent signals.
+
+## Maintenance Commands
+
+Viker's BuildKit includes built-in commands for managing, health-checking, and updating installations:
+
+- **`npx vikers-buildkit status`**: Check current installation, configured agents, symlink validity, and specification files.
+- **`npx vikers-buildkit doctor`**: Perform an automated health audit of `.buildkit/`, workflow skills, capabilities, and symlink targets. Returns non-zero exit code if health checks fail.
+- **`npx vikers-buildkit repair`**: Repair broken symlinks/junctions, restore missing workflow skills, and regenerate corrupted metadata without touching user project state.
+- **`npx vikers-buildkit update`**: Safely update workflow skills and capability library from the latest BuildKit package. Preserves all user specifications (`PRD.md`, `architecture.md`, `Tech_stack.md`, `Implementation_plan.md`, `rules.md`, `Progress.md`), history, and custom skills.
 
 ### Agent detection
 

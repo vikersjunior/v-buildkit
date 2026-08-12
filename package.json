@@ -7,6 +7,9 @@
     "v-buildkit": "bin/vikers-buildkit.js",
     "viker-buildkit": "bin/vikers-buildkit.js"
   },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
   "files": [
     "bin/",
     "install.sh",
