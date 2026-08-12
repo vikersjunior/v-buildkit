@@ -18,7 +18,8 @@ const WORKFLOW_SKILLS = [
 
 const AGENTS = {
   claude: { label: 'Claude Code', path: '.claude/skills', commands: ['claude'], signals: ['.claude/skills', 'CLAUDE.md', '.claude/settings.json'] },
-  codex: { label: 'Codex CLI / Antigravity', path: '.agents/skills', commands: ['codex'], signals: ['.agents/skills', 'AGENTS.md'] },
+  codex: { label: 'Codex CLI', path: '.agents/skills', commands: ['codex'], signals: ['.agents/skills', 'AGENTS.md'] },
+  antigravity: { label: 'Antigravity Agent', path: '.agents/skills', commands: ['antigravity', 'codex'], signals: ['.agents/skills', 'AGENTS.md'] },
   cursor: { label: 'Cursor', path: '.cursor/skills', commands: ['cursor-agent'], signals: ['.cursor/skills', '.cursor'] },
   gemini: { label: 'Gemini CLI', path: '.gemini/skills', commands: ['gemini'], signals: ['.gemini/skills', '.gemini'] },
   copilot: { label: 'GitHub Copilot', path: '.github/skills', commands: ['copilot'], signals: ['.github/skills', '.github/copilot-instructions.md'] },
@@ -32,7 +33,7 @@ const AGENTS = {
 };
 
 const ALIASES = {
-  'codex-cli': 'codex', antigravity: 'codex', 'gemini-cli': 'gemini',
+  'codex-cli': 'codex', 'gemini-cli': 'gemini',
   'github-copilot': 'copilot', 'rovo-dev': 'rovodev', 'mistral-vibe': 'vibe'
 };
 
@@ -300,6 +301,10 @@ function detectCapabilities(target, agents) {
     if (agent === 'cursor') mcpEvidence = fs.existsSync(path.join(target, '.cursor', 'mcp.json'));
     if (agent === 'gemini') mcpEvidence = fs.existsSync(path.join(target, '.gemini', 'settings.json'));
     if (agent === 'copilot') mcpEvidence = fs.existsSync(path.join(target, '.github', 'mcp.json'));
+    let parallelWorkEvidence = "unknown";
+    if (['claude', 'codex', 'antigravity'].includes(agent)) {
+      parallelWorkEvidence = true;
+    }
     return {
       agent,
       nativeSkills,
@@ -308,7 +313,7 @@ function detectCapabilities(target, agents) {
       shell: true,
       git,
       mcpEvidence,
-      parallelWorkEvidence: ['claude', 'codex'].includes(agent)
+      parallelWorkEvidence
     };
   }).filter(Boolean);
 

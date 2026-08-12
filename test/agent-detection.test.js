@@ -38,7 +38,7 @@ test('Agent detection detects Codex / Antigravity project', () => {
     const res = spawnSync(process.execPath, [CLI, 'install', tmp, '--agent', 'antigravity'], { encoding: 'utf8' });
     assert.equal(res.status, 0);
     const content = fs.readFileSync(path.join(tmp, '.buildkit', 'agent.md'), 'utf8');
-    assert.match(content, /Selected agents: codex/);
+    assert.match(content, /Selected agents: antigravity/);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
