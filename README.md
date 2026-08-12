@@ -52,6 +52,8 @@ Provides the development operating system around the agent
 
 BuildKit introduces a spec-anchored lifecycle, a 70-skill inert capability catalog across 7 departments, feature-gated execution contracts, and multi-agent compatibility.
 
+> 📖 **Learn how to get the most out of BuildKit** → Read the complete [Using Viker's BuildKit Effectively](docs/effective-usage.md) guide.
+
 ---
 
 ## The Development Lifecycle
