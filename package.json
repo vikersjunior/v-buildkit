@@ -1,6 +1,6 @@
 {
   "name": "vikers-buildkit",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "Viker's BuildKit \u2014 agent-aware spec-driven development and company-building workflow kit.",
   "bin": {
     "vikers-buildkit": "bin/vikers-buildkit.js",
