@@ -9,7 +9,7 @@ description: Use this periodically on a longer-running project, when new capabil
 
 ## Workflow
 
-1. Read `PRD.md`, `architecture.md`, and `Tech_stack.md` (specifically its Capability Tools In Use section) for the project's current actual state.
+1. Read `PRD.md`, `architecture.md`, and `Tech_stack.md` (specifically its Capability Tools In Use section, resolved from the configured documentation root in `.buildkit/config.json`) for the project's current actual state.
 2. Enumerate what's actually available: this kit's `.buildkit/skills-library/` (all 7 departments plus `02-design/external-community/` — currently inert, catalog-only) and this kit's active the native active skills directory listed in `.buildkit/agent.md` (the six workflow skills plus anything already promoted from the library), plus any other Claude Code agents/skills installed outside this kit.
 3. Compare and report, in three categories — don't just say "looks fine," name specifics:
    - **Relevant but not active** — a genuine match exists between something in `PRD.md`/`architecture.md` and a skill sitting in `.buildkit/skills-library/` that hasn't been promoted into the native active skills directory listed in `.buildkit/agent.md`. Propose promoting it (copy the folder from `skills-library/<department>/<skill-name>/` into `<native active skills directory>/<skill-name>/`), with the specific requirement it would serve.

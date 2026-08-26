@@ -156,20 +156,44 @@ npx vikers-buildkit install . --with-blank-templates
 
 ---
 
+### Configurable Project Documentation Root
+
+Specify where BuildKit-managed project documentation lives using `--docs-dir`:
+
+```bash
+npx vikers-buildkit install . --docs-dir docs/buildkit
+```
+
+Or configure it interactively during installation. BuildKit stores configuration in `.buildkit/config.json`:
+
+```json
+{
+  "schemaVersion": 1,
+  "docs": {
+    "root": "docs/buildkit"
+  }
+}
+```
+
+---
+
 ## Project Structure & State Architecture
 
-BuildKit separates project specifications from execution state:
+BuildKit separates human-facing project specifications from execution state:
 
 ```text
 my-project/
-├── PRD.md                         — Product Requirements Document (Project Source of Truth)
-├── architecture.md               — System Architecture & Component Design
-├── Tech_stack.md                 — Technology Stack & Promoted Capability Tools
-├── Implementation_plan.md        — Execution Phases & Task Checklists
-├── rules.md                      — Coding Guidelines & Security Guardrails
-├── Progress.md                   — Project Progress & Feature Audit Log
+├── docs/
+│   └── buildkit/                 — Configurable Project Documentation Root (Source of Truth)
+│       ├── PRD.md               — Product Requirements Document
+│       ├── architecture.md     — System Architecture & Component Design
+│       ├── Tech_stack.md       — Technology Stack & Promoted Capability Tools
+│       ├── Implementation_plan.md — Execution Phases & Task Checklists
+│       ├── rules.md            — Coding Guidelines & Security Guardrails
+│       └── Progress.md         — Project Progress & Feature Audit Log
 │
-├── .buildkit/                     — BuildKit Execution & State Layer
+├── .buildkit/                     — BuildKit Execution & State Layer (Root)
+│   ├── config.json               — BuildKit Project Configuration (docs.root)
 │   ├── agent.md                  — Active Agent Configuration
 │   ├── agent-capabilities.json   — Environment Capability Evidence
 │   ├── workflow-skills/          — Canonical BuildKit Workflow Skills

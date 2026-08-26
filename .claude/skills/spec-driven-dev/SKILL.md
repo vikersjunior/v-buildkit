@@ -11,6 +11,17 @@ Generates six interlocking documents for any new coding project: `PRD.md`, `arch
 
 This skill is the core of a larger kit; the full lifecycle runs: `ideate` (turn a vague idea into a crisp brief — only if the idea isn't crisp yet) → `spec-init` (this skill's generation workflow, plus matching relevant tools from `.buildkit/skills-library/`) → approval gate → `implement` (looped per task, with a mandatory security gate) → `progress` / `spec-review` / `tools-check` as needed throughout → `distill-skill` at the end. Each of those is its own skill with its own file — this skill is specifically the six-file generation and maintenance engine at the center of that loop, not the whole system by itself.
 
+## Documentation Root Resolution
+
+BuildKit project documentation location is configured in `.buildkit/config.json` under `docs.root`.
+
+Before reading or writing any of the six project documentation files (`PRD.md`, `architecture.md`, `Tech_stack.md`, `Implementation_plan.md`, `rules.md`, `Progress.md`):
+1. Check if `.buildkit/config.json` exists in the project root.
+2. Read the `docs.root` relative path string (e.g., `docs/buildkit`, `docs/specs`, or `.`).
+3. If `.buildkit/config.json` does not exist or has no `docs.root` defined, default to the project root (`.`).
+4. Read and write all six documentation files relative to the resolved documentation root directory.
+5. **Never assume BuildKit documentation files are located at the project root.**
+
 ## Core principle: single source of truth per fact
 
 Every fact about the project lives in exactly one file. Every other file references it, never restates it in its own words. This is the single most common failure mode in hand-written spec docs — a requirement gets tweaked in the PRD and nobody updates the matching line in architecture.md, and six weeks later the two documents actively disagree.

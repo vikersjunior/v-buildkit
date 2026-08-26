@@ -6,7 +6,7 @@ description: Use this when the user wants to define one implementation-ready fea
 
 `/feature` turns one bounded item from `Implementation_plan.md` into an implementation-ready contract before code changes.
 
-Read `PRD.md`, `architecture.md`, `Tech_stack.md`, `Implementation_plan.md`, `rules.md`, `Progress.md`, and `.buildkit/state.md` as relevant.
+Read `PRD.md`, `architecture.md`, `Tech_stack.md`, `Implementation_plan.md`, `rules.md`, `Progress.md` (resolved from the configured documentation root in `.buildkit/config.json`, defaulting to project root), and `.buildkit/state.md` as relevant.
 
 1. Identify the exact plan item and PRD/architecture traceability.
 2. Define the smallest coherent implementation slice.
