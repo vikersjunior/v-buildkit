@@ -299,6 +299,16 @@ Restore broken symlinks/junctions or missing BuildKit files:
 npx vikers-buildkit repair
 ```
 
+### Tokens
+
+Estimate how many context tokens each workflow command loads (skill body plus the project files it reads), so you can see which specs are growing expensive:
+
+```bash
+npx vikers-buildkit tokens
+```
+
+*Estimates use ~4 characters per token; real counts vary by model.*
+
 ---
 
 ## Safety & Non-Destructive Guarantees

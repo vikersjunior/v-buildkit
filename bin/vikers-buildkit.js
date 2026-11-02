@@ -59,6 +59,7 @@ Commands:
   status            Show BuildKit installation and agent configuration status.
   doctor            Audit BuildKit state, symlinks, and skill health.
   repair            Repair broken links, missing skills, or corrupted metadata.
+  tokens            Estimate the context tokens each workflow command loads.
 
 Examples:
   npx vikers-buildkit
@@ -70,6 +71,7 @@ Examples:
   npx vikers-buildkit status
   npx vikers-buildkit doctor
   npx vikers-buildkit update
+  npx vikers-buildkit tokens
 
 Options:
   --docs-dir <path>        Set custom project documentation directory (default: project root).
@@ -160,7 +162,7 @@ function parseArgs(argv) {
 
   if (positional.length > 0) {
     const sub = positional[0].toLowerCase();
-    if (['install', 'init', 'status', 'doctor', 'repair', 'update'].includes(sub)) {
+    if (['install', 'init', 'status', 'doctor', 'repair', 'update', 'tokens'].includes(sub)) {
       options.subcommand = sub === 'init' ? 'install' : sub;
       if (positional[1]) options.target = positional[1];
       if (positional.length > 2) throw new Error('Too many arguments supplied.');
@@ -512,6 +514,54 @@ function status(options) {
   }
 }
 
+// shortcut: ~4 chars/token heuristic, real tokenizers vary by model; good enough to rank costs
+function estimateTokens(text) {
+  return Math.ceil(text.length / 4);
+}
+
+function tokens(options) {
+  const target = resolveTarget(options.target);
+  const skillsRoot = path.join(target, '.buildkit', 'workflow-skills');
+  console.log(`\nViker's BuildKit Token Report — ${target}\n`);
+
+  if (!fs.existsSync(skillsRoot)) {
+    console.log('Status: NOT INSTALLED');
+    console.log('Run `npx vikers-buildkit install` to set up BuildKit in this project.');
+    return;
+  }
+
+  const readText = file => { try { return fs.readFileSync(file, 'utf8'); } catch { return ''; } };
+  const fmt = n => n.toLocaleString('en-US').padStart(7);
+  const absDocsRoot = resolveDocsRoot(target);
+
+  const files = {};
+  for (const file of SPEC_FILES) files[file] = estimateTokens(readText(path.join(absDocsRoot, file)));
+  files['.buildkit/state.md'] = estimateTokens(readText(path.join(target, '.buildkit', 'state.md')));
+
+  const skills = WORKFLOW_SKILLS.map(name => {
+    const body = readText(path.join(skillsRoot, name, 'SKILL.md'));
+    const frontmatter = (body.match(/^---[\s\S]*?\n---/) || [''])[0];
+    // A skill "loads" every project file its instructions name.
+    const reads = Object.keys(files).filter(f => body.includes(path.basename(f)));
+    const total = estimateTokens(body) + reads.reduce((sum, f) => sum + files[f], 0);
+    return { name, body: estimateTokens(body), frontmatter: estimateTokens(frontmatter), reads, total };
+  });
+
+  console.log('Estimates use ~4 characters per token.\n');
+  console.log(`Always loaded (skill descriptions): ${fmt(skills.reduce((s, k) => s + k.frontmatter, 0)).trim()} tokens\n`);
+
+  console.log('Project files:');
+  for (const [file, count] of Object.entries(files)) {
+    console.log(`  ${file.padEnd(26)} ${count ? fmt(count) : '  (missing)'}`);
+  }
+
+  console.log('\nPer command (skill body + files it reads):');
+  for (const s of [...skills].sort((a, b) => b.total - a.total)) {
+    const parts = s.reads.filter(f => files[f]).map(f => `${f} ${files[f].toLocaleString('en-US')}`);
+    console.log(`  /${s.name.padEnd(16)} ${fmt(s.total)}   (skill ${s.body.toLocaleString('en-US')}${parts.length ? ', ' + parts.join(', ') : ''})`);
+  }
+}
+
 function doctor(options) {
   const target = resolveTarget(options.target);
   const buildkitDir = path.join(target, '.buildkit');
@@ -723,6 +773,7 @@ try {
     case 'doctor': doctor(options); break;
     case 'repair': repair(options); break;
     case 'update': update(options); break;
+    case 'tokens': tokens(options); break;
     case 'install': default: install(options); break;
   }
 } catch (error) {
