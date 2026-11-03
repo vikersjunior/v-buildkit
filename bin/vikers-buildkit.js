@@ -15,6 +15,7 @@ const {
   SPEC_FILES,
   ConfigStatus
 } = require('../lib/config');
+const { lintProject } = require('../lib/lint');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const WORKFLOW_SOURCE = path.join(PACKAGE_ROOT, '.claude', 'skills');
@@ -61,6 +62,7 @@ Commands:
   doctor            Audit BuildKit state, symlinks, and skill health.
   repair            Repair broken links, missing skills, or corrupted metadata.
   tokens            Estimate the context tokens each workflow command loads.
+  lint              Check spec files for drift (read-only; exits 1 on failures).
 
 Examples:
   npx vikers-buildkit
@@ -73,6 +75,7 @@ Examples:
   npx vikers-buildkit doctor
   npx vikers-buildkit update
   npx vikers-buildkit tokens
+  npx vikers-buildkit lint
 
 Options:
   --docs-dir <path>        Set custom project documentation directory (default: project root).
@@ -83,6 +86,7 @@ Options:
   --skip-capabilities      Skip capability detection.
   --dry-run                (update) Show which managed files would change; write nothing.
   --force                  (update) Replace locally modified managed files after backing them up.
+  --strict                 lint: fail when BuildKit or the spec files are missing.
   -h, --help               Show this help message.
   -v, --version            Show version number.
 
@@ -134,7 +138,8 @@ function parseArgs(argv) {
     link: false,
     detect: true,
     templates: false,
-    capabilities: true
+    capabilities: true,
+    strict: false
   };
   const positional = [];
   for (let i = 0; i < argv.length; i++) {
@@ -146,6 +151,7 @@ function parseArgs(argv) {
     if (arg === '--force') { options.force = true; continue; }
     if (arg === '--no-detect') { options.detect = false; continue; }
     if (arg === '--skip-capabilities') { options.capabilities = false; continue; }
+    if (arg === '--strict') { options.strict = true; continue; }
     if (arg === '--with-blank-templates' || arg === '--with-templates') { options.templates = true; continue; }
     if (arg === '--docs-dir') {
       if (!argv[i + 1] || argv[i + 1].startsWith('--')) throw new Error('Missing value for --docs-dir');
@@ -167,7 +173,7 @@ function parseArgs(argv) {
 
   if (positional.length > 0) {
     const sub = positional[0].toLowerCase();
-    if (['install', 'init', 'status', 'doctor', 'repair', 'update', 'tokens'].includes(sub)) {
+    if (['install', 'init', 'status', 'doctor', 'repair', 'update', 'tokens', 'lint'].includes(sub)) {
       options.subcommand = sub === 'init' ? 'install' : sub;
       if (positional[1]) options.target = positional[1];
       if (positional.length > 2) throw new Error('Too many arguments supplied.');
@@ -694,6 +700,28 @@ function tokens(options) {
   }
 }
 
+function lint(options) {
+  // Not resolveTarget(): lint must never create the target directory.
+  const target = path.resolve(process.cwd(), options.target);
+  if (!fs.existsSync(target) || !fs.statSync(target).isDirectory()) {
+    throw new Error(`Project directory not found: ${target}`);
+  }
+  console.log(`\nViker's BuildKit Lint — ${target}\n`);
+
+  const findings = lintProject(target, { strict: options.strict });
+  if (!findings) {
+    console.log('Status: NOT INSTALLED');
+    console.log('Run `npx vikers-buildkit install` to set up BuildKit in this project.');
+    if (options.strict) process.exitCode = 1;
+    return;
+  }
+  for (const f of findings) console.log(`  [${f.level}] ${f.message}`);
+  const fails = findings.filter(f => f.level === 'FAIL').length;
+  const warns = findings.filter(f => f.level === 'WARN').length;
+  console.log(`\nLint Summary: ${fails} failure(s), ${warns} warning(s).\n`);
+  if (fails > 0) process.exitCode = 1;
+}
+
 function doctor(options) {
   const target = resolveTarget(options.target);
   const buildkitDir = path.join(target, '.buildkit');
@@ -909,6 +937,7 @@ try {
     case 'repair': repair(options); break;
     case 'update': update(options); break;
     case 'tokens': tokens(options); break;
+    case 'lint': lint(options); break;
     case 'install': default: install(options); break;
   }
 } catch (error) {

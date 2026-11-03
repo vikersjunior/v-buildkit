@@ -7,6 +7,7 @@
 - `update` now removes files that a new release dropped, but only when they are unmodified. Previously, stale files stayed installed.
 
 ### Added
+- `lint` command: read-only spec-drift checks that cost no model tokens. Flags a partial spec set, leftover template placeholders, a Current Phase that isn't in the plan, unconfirmed assumptions, and a Current Feature with no folder. Exits `1` on failures for CI.
 - `update --dry-run` prints the add, update, remove and conflict plan without writing anything.
 
 ## 2.6.0 — Token Economy
