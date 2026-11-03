@@ -98,52 +98,13 @@ Never let `Progress.md` go stale — if a work session produced any completed wo
 - Keep `PRD.md` and `architecture.md` implementation-detail-free where the templates say so — mixing "what/why" with "how" inside the PRD is the most common structural mistake.
 - For projects with an existing codebase (retrofitting these docs onto something already built), generate `architecture.md` and `Tech_stack.md` by reading the actual code first, not by inferring from the PRD — document what's true, not what was originally planned.
 
-## Where this kit sits on the spec-driven-development spectrum
+## Other skills, large projects and background
 
-Spec-driven development has three recognized levels of commitment (see Birgitta Böckeler's framing, referenced in Martin Fowler's writing on the topic): **spec-first** (a well-thought-out spec is written before implementation), **spec-anchored** (the spec is kept alive and revisited throughout the project, not abandoned once coding starts), and **spec-as-source** (the spec becomes the primary artifact a human edits; code is treated as generated output and the human never touches it directly).
+These live in `references/` so they load only when needed:
 
-This kit targets **spec-first with spec-anchored discipline** — the six files are generated before implementation, and `Progress.md` plus `/spec-review` exist specifically to prevent them from being abandoned once coding starts (the common "spec-once" failure mode, where a good spec launches a project and is then never looked at again). This kit does not implement spec-as-source — you and any agent working in the project still read and write code directly; the spec constrains and documents that work rather than replacing it.
-
-## Large / multi-stack projects — splitting into sub-projects
-
-For a project large enough to naturally decompose into genuinely independent deployable units (e.g. a separate infrastructure stack and an application stack, or multiple services with different deploy lifecycles), a single flat `Implementation_plan.md` phase list can become unwieldy. In that case:
-
-- Keep one `PRD.md` and one `architecture.md` at the project root — the overall requirements and system shape are still one coherent story.
-- Structure `Implementation_plan.md` around named sub-projects, each with its own phase sequence and explicit dependency on the others (e.g. "Sub-project A: Infrastructure — must complete Phase 2 before Sub-project B: API Service can begin its Phase 1"). This mirrors building genuinely modular, independently testable stacks rather than one monolithic build sequence.
-- `Progress.md`'s "Current Phase" should track per sub-project once this split happens, not a single global phase number — otherwise it stops accurately reflecting reality on multi-track work.
-- Don't split into sub-projects prematurely — if the whole thing can be reasonably sequenced as one phase list, do that; the split is for genuine independent-deployability cases, not a default structure.
-
-## Parallelizing work with git worktrees (use sparingly, and only when it earns its cost)
-
-Once `Implementation_plan.md` has genuinely independent sub-projects or phases, git worktrees let separate work happen in separate directories on separate branches without constant branch-switching — each worktree checks out its own branch while sharing the same repository history.
-
-**When this is worth it:** two or more phases/sub-projects that are truly independent (don't touch overlapping files) and both need active work right now — not as a default parallelization habit for every project.
-
-**When it isn't:** a monolithic codebase where "independent" phases still touch shared files. Parallel work on a shared monolith produces real merge conflicts on integration, not just theoretical risk — resolve via `git rebase` (not merge, to keep linear history) when it happens, and expect it to happen if file overlap exists between the parallel branches.
-
-**Before starting a worktree, verify these explicitly — this is the actual failure mode, not a hypothetical:**
-- A fresh worktree does NOT inherit gitignored files — environment config, `.env` files, local secrets, and installed dependencies all need to be set up again in the new worktree directory. Skipping this produces confusing "why isn't my change showing up" debugging sessions that are actually just "you're running the old worktree/branch."
-- Confirm which directory and branch a terminal session or IDE window is actually pointed at before making changes or testing — running the app from the wrong worktree while editing in the right one (or vice versa) is the single most common mistake here.
-
-If `/implement` is invoked on a task that's part of an independent sub-project/phase with other active work in flight elsewhere, it's reasonable to suggest a worktree — but always flag the setup steps above explicitly rather than assuming the environment carries over.
-
-## Why this kit doesn't orchestrate agent teams
-
-Claude Code supports "agent teams" — multiple teammates sharing a task list and working in parallel, distinct from subagents (which only report back to a main agent). This kit's `/implement` skill deliberately runs sequentially, one task at a time, rather than spawning a team, based on a documented real-world finding: for typical solo-developer feature work (4-6 requirements per task, most implementations completing in 15-20 minutes regardless of team size), agent teams add real costs — each teammate carries its own context window (a team of 4 can burn ~4x the tokens of a solo session for the same work), coordination has known rough edges, and the actual bottleneck in practice is specification quality and review bandwidth, not implementation speed. Agent teams pay off specifically for larger organizations running many developers against many genuinely independent, non-overlapping feature requests in parallel — not for the single-developer, spec-first workflow this kit is built around. If that changes for a given project (multiple people, genuinely parallel non-overlapping workstreams), that's a deliberate call to make explicitly, not something this kit does by default.
-
-## Coexisting with other installed specialist agents/skills
-
-This kit ships its own 70-skill catalog at `.buildkit/skills-library/` (organized by department: developers, design, marketing, social/content, finance, operations, legal — plus a design `external-community/` subfolder of sourced third-party design-taste skills). That catalog is **inert by default** — sitting in `skills-library/` doesn't make a skill active or auto-triggering. `spec-init` (during initial generation) and `tools-check` (periodically afterward) are the two places that match catalog skills against a project's actual `PRD.md`/`architecture.md` and, on confirmation, promote the matched ones by copying their folder into the native active skills directory listed in `.buildkit/agent.md` where they become live. This keeps each project's active skillset intentional and lean instead of running all 70 by default.
-
-Beyond this kit's own catalog, a project may also have other Claude Code agents/skills installed from elsewhere entirely (e.g. a third-party marketplace CLI). Installing more of these is fine and doesn't dilute this kit's quality — **but only if they're kept out of the spec-generation phase and confined to implementation.**
-
-**The specific failure mode to prevent:** `PRD.md` and `architecture.md` are deliberately technology-agnostic by this skill's ownership rules (see the ownership table above) — no frameworks, no specific implementation opinions, until `Tech_stack.md` deliberately introduces them. A broadly-triggering specialist skill (a frontend/backend "senior" skill, a framework-specific best-practices skill) can plausibly fire *during* `spec-init`'s document generation and start injecting implementation-specific opinions into a document whose entire job is staying implementation-free — this is the actual disruption risk, not "too many tools installed."
-
-**The rule:** during `spec-init`'s generation of `PRD.md` and `architecture.md` specifically, do not let any general capability/best-practices skill override or add content beyond what those files' templates call for — technology and implementation-specific guidance belongs in `Tech_stack.md`'s Capability Tools In Use section and surfaces during `/implement`, not during initial spec generation. A skill oriented around open-ended ideation/brainstorming should especially not be allowed to expand `spec-init`'s deliberately minimal one-question-max intake into a longer discovery interview — that's a direct conflict with this kit's stated intake discipline (and with `ideate`'s own scoped intake discipline, if that's the skill in play), and this kit's discipline takes precedence during both `ideate` and `spec-init`.
-
-**During `/implement`,** the opposite is true — specialist agents/skills relevant to the task at hand (whether promoted from this kit's `skills-library/` or installed from elsewhere, per `Tech_stack.md`'s Capability Tools In Use section) should be used freely; this is exactly where they add value, applying focused expertise to code that's already scoped by an approved spec.
-
-**Avoid name collisions.** If installing third-party skills that share a name with a skill already present in `.buildkit/skills-library/` or the native active skills directory listed in `.buildkit/agent.md` (this kit's own catalog uses names like `mcp-builder`, `canvas-design`, `code-reviewer` that are common enough to collide with similarly-named skills from other sources), resolve the collision before relying on either — rename one, or remove the duplicate — rather than leaving two differently-authored skills with the same name and an ambiguous trigger priority. `tools-check` flags these automatically; still worth checking manually the first time a new external source gets installed.
+- `references/other-skills.md` — read during `spec-init` or `tools-check`, or when installing third-party skills. The rule that always applies: while `spec-init` generates `PRD.md` and `architecture.md`, no capability or best-practices skill may add implementation-specific content or expand the one-question intake. Specialist skills belong in `/implement`. The 70-skill `.buildkit/skills-library/` catalog is inert until a skill is promoted into the active skills directory.
+- `references/sub-projects.md` — read when the plan needs independent sub-projects, or before suggesting a git worktree (it lists the setup a fresh worktree does not inherit).
+- `references/background.md` — rationale: where this kit sits on the spec-driven spectrum, and why `/implement` runs sequentially instead of using agent teams.
 
 ## Reference files
 
