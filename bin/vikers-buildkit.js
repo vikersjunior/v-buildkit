@@ -213,12 +213,22 @@ function hashFile(file) {
   return crypto.createHash('sha256').update(data).digest('hex');
 }
 
+// A random temp name, created exclusively, so a pre-planted file or link at that path can't redirect the write.
+function tempPath(dest) {
+  return `${dest}.buildkit-tmp-${crypto.randomBytes(8).toString('hex')}`;
+}
+
 // Writes through a temp file and a rename, so an interrupted update never leaves a half-written file.
 function copyFileAtomic(source, dest) {
   fs.mkdirSync(path.dirname(dest), { recursive: true });
-  const tmp = `${dest}.buildkit-tmp-${process.pid}`;
-  fs.copyFileSync(source, tmp);
-  fs.renameSync(tmp, dest);
+  const tmp = tempPath(dest);
+  try {
+    fs.copyFileSync(source, tmp, fs.constants.COPYFILE_EXCL);
+    fs.renameSync(tmp, dest);
+  } catch (err) {
+    try { fs.unlinkSync(tmp); } catch {}
+    throw err;
+  }
 }
 
 // Manifest paths are untrusted (.buildkit/ is usually committed): only plain relative posix paths.
@@ -289,8 +299,29 @@ function writeManifest(target, agents) {
   for (const [rel, source] of [...sources].sort(([a], [b]) => a.localeCompare(b))) files[rel] = hashFile(source);
   const data = { schemaVersion: 1, version: require('../package.json').version, files };
   const dest = path.join(target, MANIFEST_PATH);
-  fs.writeFileSync(`${dest}.buildkit-tmp-${process.pid}`, JSON.stringify(data, null, 2) + '\n');
-  fs.renameSync(`${dest}.buildkit-tmp-${process.pid}`, dest);
+  const tmp = tempPath(dest);
+  try {
+    fs.writeFileSync(tmp, JSON.stringify(data, null, 2) + '\n', { flag: 'wx' });
+    fs.renameSync(tmp, dest);
+  } catch (err) {
+    try { fs.unlinkSync(tmp); } catch {}
+    throw err;
+  }
+}
+
+// .buildkit/ is project state that is usually committed, so neither it, its backups folder nor the
+// manifest may be a link: a link would let install, repair or update read or write outside the project.
+function assertBuildkitContained(target) {
+  const targetReal = fs.realpathSync(target);
+  for (const [rel, kind] of [['.buildkit', 'directory'], ['.buildkit/backups', 'directory'], ['.buildkit/manifest.json', 'file']]) {
+    const abs = path.join(target, ...rel.split('/'));
+    let stat;
+    try { stat = fs.lstatSync(abs); } catch { continue; }
+    const rightKind = kind === 'directory' ? stat.isDirectory() : stat.isFile();
+    if (stat.isSymbolicLink() || !rightKind || !parentInside(targetReal, path.join(abs, 'x'))) {
+      throw new Error(`${rel} must be a real ${kind} inside the project, not a link. Nothing was changed.`);
+    }
+  }
 }
 
 // Sort managed files into add / update / remove / unchanged / conflict / blocked.
@@ -344,7 +375,10 @@ function prepareBackups(target) {
   fs.mkdirSync(root, { recursive: true });
   const ignore = path.join(root, '.gitignore');
   if (!fs.existsSync(ignore)) fs.writeFileSync(ignore, '*\n');
-  const runs = fs.readdirSync(root, { withFileTypes: true }).filter(e => e.isDirectory()).map(e => e.name).sort();
+  // Only prune real directories named like a backup run; never anything else that lives here.
+  const runs = fs.readdirSync(root, { withFileTypes: true })
+    .filter(e => e.isDirectory() && /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z$/.test(e.name))
+    .map(e => e.name).sort();
   for (const old of runs.slice(0, Math.max(0, runs.length - (BACKUPS_KEPT - 1)))) {
     fs.rmSync(path.join(root, old), { recursive: true, force: true });
   }
@@ -602,6 +636,7 @@ function detectCapabilities(target, agents) {
 function install(options) {
   if (!fs.existsSync(WORKFLOW_SOURCE)) throw new Error('BuildKit workflow skills are missing from the package.');
   const target = resolveTarget(options.target);
+  assertBuildkitContained(target);
 
   const docsDirRel = selectDocsDir(options, target);
   writeBuildkitConfig(target, { docs: { root: docsDirRel } });
@@ -869,6 +904,7 @@ function repair(options) {
   const buildkitDir = path.join(target, '.buildkit');
   const workflowRoot = path.join(buildkitDir, 'workflow-skills');
   const libraryRoot = path.join(buildkitDir, 'skills-library');
+  assertBuildkitContained(target);
 
   console.log(`\nViker's BuildKit Repair — Repairing BuildKit state in ${target}\n`);
 
@@ -930,6 +966,7 @@ function update(options) {
     console.log('BuildKit is not installed in this directory. Running clean install...');
     return install(options);
   }
+  assertBuildkitContained(target);
 
   console.log(`\nViker's BuildKit Update — Updating ${target}\n`);
 

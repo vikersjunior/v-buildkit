@@ -241,15 +241,76 @@ test('update treats a malformed manifest as missing instead of crashing', () => 
   }
 });
 
+test('update refuses a linked .buildkit/backups and never prunes outside it', () => {
+  const tmp = installed();
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'buildkit-test-outside-'));
+  try {
+    for (const name of ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot']) fs.mkdirSync(path.join(outside, name));
+    fs.symlinkSync(outside, path.join(tmp, '.buildkit', 'backups'), 'junction');
+    fs.writeFileSync(path.join(tmp, SKILL), 'edited');
+    const res = run('update', tmp, '--force');
+    assert.equal(res.status, 1);
+    assert.match(res.stderr, /\.buildkit\/backups must be a real directory inside the project/);
+    assert.deepEqual(fs.readdirSync(outside).sort(), ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot']);
+    assert.equal(fs.readFileSync(path.join(tmp, SKILL), 'utf8'), 'edited', 'nothing changed');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+    fs.rmSync(outside, { recursive: true, force: true });
+  }
+});
+
+test('install, repair and update refuse a linked .buildkit', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'buildkit-test-update-'));
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'buildkit-test-outside-'));
+  try {
+    fs.symlinkSync(outside, path.join(tmp, '.buildkit'), 'junction');
+    for (const cmd of ['install', 'repair', 'update']) {
+      const res = run(cmd, tmp, '--agent', 'claude', '--no-detect');
+      assert.equal(res.status, 1, cmd);
+      assert.match(res.stderr, /\.buildkit must be a real directory inside the project/, cmd);
+      assert.deepEqual(fs.readdirSync(outside), [], `${cmd} wrote nothing outside`);
+    }
+  } finally {
+    fs.rmSync(path.join(tmp, '.buildkit'), { recursive: true, force: true });
+    fs.rmSync(tmp, { recursive: true, force: true });
+    fs.rmSync(outside, { recursive: true, force: true });
+  }
+});
+
+test('update refuses a symlinked manifest', (t) => {
+  const tmp = installed();
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'buildkit-test-outside-'));
+  try {
+    const target = path.join(outside, 'manifest.json');
+    fs.copyFileSync(path.join(tmp, '.buildkit', 'manifest.json'), target);
+    fs.rmSync(path.join(tmp, '.buildkit', 'manifest.json'));
+    try {
+      fs.symlinkSync(target, path.join(tmp, '.buildkit', 'manifest.json'));
+    } catch (err) {
+      if (err.code !== 'EPERM') throw err;
+      t.skip('file symlinks need Developer Mode or an elevated shell on Windows');
+      return;
+    }
+    const res = run('update', tmp);
+    assert.equal(res.status, 1);
+    assert.match(res.stderr, /\.buildkit\/manifest\.json must be a real file inside the project/);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+    fs.rmSync(outside, { recursive: true, force: true });
+  }
+});
+
 test('update --force keeps backups out of git and keeps only the newest five', () => {
   const tmp = installed();
   try {
     const backups = path.join(tmp, '.buildkit', 'backups');
     for (let i = 0; i < 6; i++) fs.mkdirSync(path.join(backups, `2000-01-0${i + 1}T00-00-00-000Z`), { recursive: true });
+    fs.mkdirSync(path.join(backups, 'aaa-keep-me'));
     fs.writeFileSync(path.join(tmp, SKILL), 'edited');
     assert.equal(run('update', tmp, '--force').status, 0);
     assert.equal(fs.readFileSync(path.join(backups, '.gitignore'), 'utf8'), '*\n');
-    const runs = fs.readdirSync(backups).filter(n => n !== '.gitignore').sort();
+    assert.ok(fs.existsSync(path.join(backups, 'aaa-keep-me')), 'folders not named like a backup run are never pruned');
+    const runs = fs.readdirSync(backups).filter(n => /^\d{4}-/.test(n)).sort();
     assert.equal(runs.length, 5);
     assert.ok(!runs.includes('2000-01-01T00-00-00-000Z') && !runs.includes('2000-01-02T00-00-00-000Z'), 'oldest runs pruned');
   } finally {
