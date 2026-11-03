@@ -383,4 +383,6 @@ Pushing a version tag (e.g. `v2.4.1`) triggers:
 
 ## License
 
-Viker's BuildKit is licensed under the [MIT License](LICENSE).
+Viker's BuildKit is licensed under the [MIT License](LICENSE). Copyright (c) 2026 Orim Studio.
+
+Third-party skills in `skills-library/02-design/external-community/` keep their own licenses (MIT and Apache-2.0). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

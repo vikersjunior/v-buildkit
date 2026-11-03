@@ -19,6 +19,8 @@
     "skills-library/",
     "templates/",
     "README.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
     "V2-CHANGELOG.md"
   ],
   "engines": {
