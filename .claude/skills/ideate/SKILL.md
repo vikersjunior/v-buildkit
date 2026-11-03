@@ -1,9 +1,11 @@
 ---
 name: ideate
-description: Use this when the user has a rough, vague, or early-stage idea and isn't yet ready to commit to a spec — phrases like "I have an idea for...", "thinking about building something that...", "not sure exactly what this should be yet", or when they explicitly ask to brainstorm, validate, or refine a concept before building. Do NOT use this when the user already has a clear, specific project description — that goes straight to spec-init. This skill's entire job is turning a vague idea into a crisp enough brief that spec-init can act on it; it does not generate any of the six spec files itself.
+description: Turns a rough or early idea into a brief that spec-init can act on; writes none of the six spec files. Use for /ideate, "I have an idea for...", "not sure what this should be yet", or requests to brainstorm, validate or refine a concept. If the user already has a clear project description, use spec-init instead.
 ---
 
 # Ideate — Turning a Vague Idea into a Buildable Brief
+
+Context reuse: if a file this skill needs was already read in this session and has not changed since, reuse it. Reread only if it is absent from context, may have changed, or exact current text is needed.
 
 This is the front door to the system, for the case `spec-init` isn't built to handle well: an idea that isn't crisp yet. `spec-init` assumes the person already knows roughly what they're building — this skill exists for the step before that's true.
 

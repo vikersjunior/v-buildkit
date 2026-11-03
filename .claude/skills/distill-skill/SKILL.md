@@ -3,6 +3,8 @@ name: distill-skill
 description: Use this at the end of a project or a major phase, or whenever explicitly invoked via "/distill-skill", "capture what we learned", or "turn this project's lessons into a reusable skill". Distills hard-won, transferable lessons from a completed project into a standalone SKILL.md so the next similar project starts from where this one finished.
 ---
 
+Context reuse: if a file this skill needs was already read in this session and has not changed since, reuse it. Reread only if it is absent from context, may have changed, or exact current text is needed.
+
 This skill exists because the six spec files capture *what was decided*, not *what was learned the hard way getting there* — things like "this API's public-preview CLI doesn't yet support resource X, fall back to CloudFormation for that specific piece" or "this auth property can't be changed in place, plan for it upfront." That kind of operational knowledge is exactly what's worth carrying forward, and exactly what gets lost if it only lives in chat history.
 
 1. Read `Progress.md`'s "Decisions Made" and "Known Issues" sections, and `architecture.md`'s ADR log (resolved from the configured documentation root in `.buildkit/config.json`), for the full history of this project.

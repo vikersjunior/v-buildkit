@@ -1,9 +1,11 @@
 ---
 name: spec-driven-dev
-description: Always use this skill at the start of any new coding project, the moment the user describes a project idea, app concept, or feature they want built — before writing any code. Generates the full spec-driven-development document set (PRD.md, architecture.md, Tech_stack.md, Implementation_plan.md, rules.md, Progress.md) in the correct dependency order, in one pass, with no placeholders. Also use this skill any time the user asks to "set up spec docs," "start a new project properly," "generate the PRD/architecture/etc," or references any of these six files by name. After initial generation, this skill also governs how these six files get updated as the project evolves — use it whenever a completed milestone, a scope change, or a new decision needs to be reflected back into the docs.
+description: Owns the six spec files (PRD.md, architecture.md, Tech_stack.md, Implementation_plan.md, rules.md, Progress.md), their templates, order and update rules. Use when one of these files must be written or updated after a milestone, scope change or new decision, or when the user names one of them. For a brand-new project use spec-init; for a vague idea use ideate.
 ---
 
 # Spec-Driven Development — 6-File Project Scaffold
+
+Context reuse: if a file this skill needs was already read in this session and has not changed since, reuse it. Reread only if it is absent from context, may have changed, or exact current text is needed.
 
 Generates six interlocking documents for any new coding project: `PRD.md`, `architecture.md`, `Tech_stack.md`, `Implementation_plan.md`, `rules.md`, `Progress.md`. These aren't six independent documents — they're one coherent spec split by function, each with a narrow, non-overlapping job. Treat them as a system, not a checklist.
 

@@ -1,8 +1,13 @@
 ---
 name: complete
 description: Use this to close a feature after /check and /audit have passed, including explicit /complete requests. Archives feature evidence and updates Progress.md.
+disable-model-invocation: true
 ---
 # Complete — Feature Closure Gate
+
+Run only when the user explicitly asks for this command (for example by typing /complete). Do not start it on your own initiative or chain into it from another skill.
+
+Context reuse: if a file this skill needs was already read in this session and has not changed since, reuse it. Reread only if it is absent from context, may have changed, or exact current text is needed.
 
 Completion requires: approved feature spec, implementation, passing `/check`, no blocking `/audit` findings, and passing relevant tests/type checks/build checks.
 

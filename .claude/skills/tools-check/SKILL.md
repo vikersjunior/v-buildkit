@@ -1,9 +1,11 @@
 ---
 name: tools-check
-description: Use this periodically on a longer-running project, when new capability agents/skills have been installed since the project started, when explicitly invoked via "/tools-check", or when the user asks "what tools should I be using for this" or "am I using the right skills for this project". Audits installed capability tools (this kit's skills-library plus anything else installed) against the current project's Tech_stack.md and PRD.md, flagging relevant-but-unused tools, listed-but-irrelevant tools, and known name collisions between tool sources.
+description: Audits installed capability skills and agents against this project's Tech_stack.md and PRD.md, flagging tools that are relevant but unused, listed but irrelevant, or colliding by name. Use for /tools-check, "what tools should I be using", "am I using the right skills", after installing new skills, or periodically on a long project.
 ---
 
 # Tools Check — Periodic Capability Audit
+
+Context reuse: if a file this skill needs was already read in this session and has not changed since, reuse it. Reread only if it is absent from context, may have changed, or exact current text is needed.
 
 `spec-init` matches capability tools once, at project start, against the PRD and architecture as they existed then. This skill re-runs that matching later — after the project has evolved, or after new tools have been installed — since neither of those staying in sync with `Tech_stack.md`'s Capability Tools In Use section is automatic.
 
