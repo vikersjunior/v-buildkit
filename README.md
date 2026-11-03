@@ -201,6 +201,8 @@ my-project/
 │   ├── features/                 — Approved Feature Contracts
 │   ├── history/                  — Execution History Logs
 │   ├── audits/                   — Security & Quality Audit Reports
+│   ├── findings.md               — Findings Ledger (gates /complete and lint)
+│   ├── bin/lint.js               — Vendored Lint Checker (with lib/)
 │   ├── decisions/                — Architectural Decision Records (ADRs)
 │   └── rollbacks/                — Rollback Recovery Checkpoints
 │
@@ -328,6 +330,11 @@ npx vikers-buildkit lint
 | `Progress.md`'s Current Phase is not a phase heading in `Implementation_plan.md` | FAIL |
 | A `**Assumption:**` tag is still in a spec | WARN |
 | `.buildkit/state.md` names a feature with no feature or history folder | WARN |
+| A `BLOCKING` finding in `.buildkit/findings.md` is `open` or `fixed` | FAIL |
+| A malformed or duplicate finding header, or an `accepted`/`invalid`/`closed` finding missing its `Reason`, `Accepted by` or `Verified in` line | FAIL |
+| An audit report names a finding ID the ledger lacks, or rated an open finding higher than the ledger does | FAIL |
+| The ledger or an audit report exists but can't be read | FAIL |
+| A ledger line matches a common credential pattern (private key, AWS, GitHub, OpenAI or Slack token) | WARN |
 
 Findings about a line in a file give the file and line number. Lint exits with status `1` when any check fails, so it works as a CI step. In CI, add `--strict` so that a missing BuildKit install or a project with no specs fails too (without it, both are only warnings, which suits a fresh project before `/spec-init`):
 
@@ -335,6 +342,18 @@ Findings about a line in a file give the file and line number. Lint exits with s
 - name: Check BuildKit specs
   run: npx vikers-buildkit lint --strict
 ```
+
+### Findings Ledger
+
+`/audit` records every finding in `.buildkit/findings.md` under a durable ID, and its timestamped report lists the IDs:
+
+```
+### F-001 [BLOCKING] open — SQL built from request input in /api/search
+- Where: src/api/search.ts:42
+- Detail: one or two lines naming the problem.
+```
+
+Statuses are `open`, `fixed` (set by `/implement`), `closed` (set by `/audit`, with `- Verified in: <report>`), `accepted` (your decision, with `- Reason:` and `- Accepted by:`) and `invalid` (with `- Reason:`). A `BLOCKING` finding that is `open` or `fixed` blocks completion anywhere in the project. `/complete` runs `node .buildkit/bin/lint.js`, the copy of lint installed with the skills, and refuses on a non-zero exit, so any lint failure blocks completion. The ledger is committed with the rest of `.buildkit/`, so it names locations, never secrets.
 
 ---
 

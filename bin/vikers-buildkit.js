@@ -15,12 +15,16 @@ const {
   SPEC_FILES,
   ConfigStatus
 } = require('../lib/config');
-const { lintProject } = require('../lib/lint');
+const { runLint } = require('../lib/lint');
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const WORKFLOW_SOURCE = path.join(PACKAGE_ROOT, '.claude', 'skills');
 const LIBRARY_SOURCE = path.join(PACKAGE_ROOT, 'skills-library');
 const TEMPLATE_SOURCE = path.join(PACKAGE_ROOT, 'templates');
+
+// The lint checker ships next to the skills (same layout as the package), so /complete runs
+// `node .buildkit/bin/lint.js` from the release that wrote its instructions, with no npx.
+const VENDORED_LINT = ['bin/lint.js', 'lib/lint.js', 'lib/config.js'];
 
 const WORKFLOW_SKILLS = [
   'spec-driven-dev', 'ideate', 'spec-init', 'spec-review', 'feature',
@@ -197,6 +201,11 @@ function copyDir(source, dest) {
   fs.cpSync(source, dest, { recursive: true, force: true });
 }
 
+function copyVendoredLint(target) {
+  // Atomic rename replaces a pre-planted link at the destination instead of writing through it.
+  for (const rel of VENDORED_LINT) copyFileAtomic(path.join(PACKAGE_ROOT, ...rel.split('/')), path.join(target, '.buildkit', ...rel.split('/')));
+}
+
 function copyFile(source, dest) {
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   fs.copyFileSync(source, dest);
@@ -265,12 +274,13 @@ function isSymlinkPath(file) {
 // plus the roots under which recorded-but-obsolete files may be pruned.
 function managedSources(target, agents) {
   const files = new Map();
-  const roots = ['.buildkit/workflow-skills', '.buildkit/skills-library'];
+  const roots = ['.buildkit/workflow-skills', '.buildkit/skills-library', '.buildkit/bin', '.buildkit/lib'];
   const addTree = (sourceDir, destRel) => {
     for (const rel of listFiles(sourceDir)) files.set(`${destRel}/${rel}`, path.join(sourceDir, ...rel.split('/')));
   };
   addTree(WORKFLOW_SOURCE, roots[0]);
   addTree(LIBRARY_SOURCE, roots[1]);
+  for (const rel of VENDORED_LINT) files.set(`.buildkit/${rel}`, path.join(PACKAGE_ROOT, ...rel.split('/')));
   for (const agent of agents) {
     const cfg = AGENTS[agent];
     // Linked agent dirs resolve into .buildkit/workflow-skills, which is already tracked.
@@ -315,7 +325,7 @@ function assertBuildkitContained(target) {
   const targetReal = fs.realpathSync(target);
   const checked = [
     ['.buildkit', 'directory'], ['.buildkit/workflow-skills', 'directory'], ['.buildkit/skills-library', 'directory'],
-    ['.buildkit/backups', 'directory'], ['.buildkit/manifest.json', 'file']
+    ['.buildkit/bin', 'directory'], ['.buildkit/lib', 'directory'], ['.buildkit/backups', 'directory'], ['.buildkit/manifest.json', 'file']
   ];
   for (const [rel, kind] of checked) {
     const abs = path.join(target, ...rel.split('/'));
@@ -684,6 +694,7 @@ function install(options) {
   fs.mkdirSync(buildkit, { recursive: true });
   copyDir(WORKFLOW_SOURCE, workflowRoot);
   copyDir(LIBRARY_SOURCE, libraryRoot);
+  copyVendoredLint(target);
   for (const agent of agents) installAgent(target, workflowRoot, agent, options.link);
   writeManifest(target, agents);
   writeAgentConfig(target, agents);
@@ -783,6 +794,7 @@ function tokens(options) {
   const files = {};
   for (const file of SPEC_FILES) files[file] = estimateTokens(readText(path.join(absDocsRoot, file)));
   files['.buildkit/state.md'] = estimateTokens(readText(path.join(target, '.buildkit', 'state.md')));
+  files['.buildkit/findings.md'] = estimateTokens(readText(path.join(target, '.buildkit', 'findings.md')));
 
   const skills = WORKFLOW_SKILLS.map(name => {
     const body = readText(path.join(skillsRoot, name, 'SKILL.md'));
@@ -810,24 +822,7 @@ function tokens(options) {
 
 function lint(options) {
   // Not resolveTarget(): lint must never create the target directory.
-  const target = path.resolve(process.cwd(), options.target);
-  if (!fs.existsSync(target) || !fs.statSync(target).isDirectory()) {
-    throw new Error(`Project directory not found: ${target}`);
-  }
-  console.log(`\nViker's BuildKit Lint — ${target}\n`);
-
-  const findings = lintProject(target, { strict: options.strict });
-  if (!findings) {
-    console.log('Status: NOT INSTALLED');
-    console.log('Run `npx vikers-buildkit install` to set up BuildKit in this project.');
-    if (options.strict) process.exitCode = 1;
-    return;
-  }
-  for (const f of findings) console.log(`  [${f.level}] ${f.message}`);
-  const fails = findings.filter(f => f.level === 'FAIL').length;
-  const warns = findings.filter(f => f.level === 'WARN').length;
-  console.log(`\nLint Summary: ${fails} failure(s), ${warns} warning(s).\n`);
-  if (fails > 0) process.exitCode = 1;
+  process.exitCode = runLint(path.resolve(process.cwd(), options.target), { strict: options.strict });
 }
 
 function doctor(options) {
@@ -887,6 +882,8 @@ function doctor(options) {
 
   const libraryRoot = path.join(buildkitDir, 'skills-library');
   check(fs.existsSync(libraryRoot), '.buildkit/skills-library/ exists', '.buildkit/skills-library/ missing');
+  const missingLint = VENDORED_LINT.filter(rel => !fs.existsSync(path.join(buildkitDir, ...rel.split('/'))));
+  check(missingLint.length === 0, '.buildkit/bin/lint.js checker present', `Lint checker files missing: ${missingLint.map(rel => `.buildkit/${rel}`).join(', ')}`);
 
   const configured = getConfiguredAgents(target);
   warn(configured.length > 0, `.buildkit/agent.md config found (${configured.join(', ')})`, '.buildkit/agent.md missing or no agents recorded');
@@ -945,7 +942,8 @@ function repair(options) {
 
   copyDir(WORKFLOW_SOURCE, workflowRoot);
   copyDir(LIBRARY_SOURCE, libraryRoot);
-  console.log('✓ Restored .buildkit/workflow-skills and .buildkit/skills-library');
+  copyVendoredLint(target);
+  console.log('✓ Restored .buildkit/workflow-skills, .buildkit/skills-library and .buildkit/bin/lint.js');
 
   let configured = getConfiguredAgents(target);
   if (!configured.length) {
