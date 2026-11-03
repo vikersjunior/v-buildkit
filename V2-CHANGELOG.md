@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Changed
+- `/audit` records findings in a ledger, `.buildkit/findings.md`, with durable IDs (`### F-001 [BLOCKING] open — title`) and statuses open/fixed/closed/accepted/invalid. On its first run it carries every BLOCKING and HIGH finding from older reports into the ledger. `/implement` marks a finding `fixed`; only `/audit` closes it. `/complete` runs `node .buildkit/bin/lint.js` and refuses on a non-zero exit, so any lint failure, including an open or unverified BLOCKING finding, blocks completion. Customized copies of these three skills show as `update` conflicts.
 - Sharper skill descriptions for `spec-init` (owns starting a new project from scratch), `spec-review` (read-only consistency check; updates belong to `spec-driven-dev`), `progress` and `ideate`, so agents pick the right one more often. If you customized one of these skills, `update` reports a conflict and keeps your text; use `update --dry-run`, then `--force` to back it up and take the new wording.
 - BuildKit now requires Node.js 22 or newer (`engines`), since Node 18 and 20 are past end-of-life. CI tests Node 22 and 24 on Linux, macOS and Windows.
 - Releases: the publish workflow fails when the tag doesn't match the `package.json` version, skips `npm publish` when that version is already on npm, and creates the GitHub release with generated notes.
@@ -15,6 +16,8 @@
 - `update` refuses manifest paths that are absolute or contain `..` or `\`, and paths whose parent directory resolves outside the project, so a tampered `manifest.json` or a symlinked folder can't make it write or delete files elsewhere. `install`, `repair` and `update` refuse to run when `.buildkit/`, its `workflow-skills/`, `skills-library/` or `backups/` folder, or `manifest.json` is a link, and containment is re-checked right before each write. In agent skill folders, `update` only prunes inside BuildKit's own skills, never your own. Files are written via a randomly named, exclusively created temp file and a rename. Backups get a `.gitignore`, and only the newest five timestamped runs are kept.
 
 ### Added
+- `lint` checks the findings ledger: an open or fixed BLOCKING finding, a malformed or duplicate header, a missing `Reason`/`Accepted by`/`Verified in` line, an audit report naming an ID the ledger lacks or rating an open finding higher, or an unreadable ledger or report fails; a line that looks like a secret warns. CI running `lint --strict` now fails while a BLOCKING finding is open.
+- Install, repair and update copy the lint checker to `.buildkit/bin/lint.js` (with `.buildkit/lib/`), tracked in the manifest, so skills run the checker from their own release without npx. `doctor` reports it as missing on projects installed before this release until you run `npx vikers-buildkit update`.
 - `lint` command: read-only spec-drift checks that cost no model tokens. Flags a partial spec set, leftover template placeholders, a Current Phase that isn't in the plan, unconfirmed assumptions, and a Current Feature with no folder. Exits `1` on failures for CI.
 - `update --dry-run` prints the add, update, remove and conflict plan without writing anything.
 - Skill routing evals (repo only, not shipped): `npm run eval:routing` ranks the model-routed skills' descriptions against plain-language prompts, and `npm test` fails if routing drops below the recorded floor.

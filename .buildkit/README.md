@@ -8,6 +8,8 @@ Directories:
 - `features/` active feature contracts and verification
 - `history/` completed feature evidence
 - `audits/` implementation audit reports
+- `findings.md` the findings ledger: one entry per audit finding, with a durable ID and status; `/complete` and `lint` gate on it
+- `bin/lint.js`, `lib/` the lint checker, copied from the BuildKit release that installed these skills (`node .buildkit/bin/lint.js`)
 - `decisions/` execution decisions
 - `rollbacks/` rollback notes
 
