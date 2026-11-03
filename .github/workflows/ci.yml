@@ -26,6 +26,8 @@ jobs:
         with:
           # Full history, so the routing-eval test can compare floor.json with the base branch.
           fetch-depth: 0
+          # Don't leave GITHUB_TOKEN in .git/config, where the (PR-controlled) tests could read it.
+          persist-credentials: false
 
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4

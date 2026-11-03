@@ -396,11 +396,11 @@ npm test
 npm run eval:routing
 ```
 
-This is a lexical smoke test, not a measure of how an agent actually routes: it catches a description edit that steals or loses another skill's wording. `npm test` fails if the overall, train, holdout or any single skill's rank-1 count drops below `evals/routing/floor.json`, or if a prompt that routed correctly falls out of its owner's top 3.
+This is a lexical smoke test, not a measure of how an agent actually routes: it catches a description edit that steals or loses another skill's wording. `npm test` fails if the overall, train, holdout or any single skill's rank-1 count drops below `evals/routing/floor.json`, if a prompt that routed correctly falls out of its owner's top 3, if a routed skill has no floor, or if any prompt changes without re-recording the floor (all prompts are pinned by SHA-256, so scores can't be moved by editing prompts instead of descriptions).
 
 - Prompts are synthetic. They may not contain `/`, a hyphenated skill name, or 3 consecutive words from any description.
 - Holdout misses are reported as a count only, which reduces accidental tuning; anyone can still read the holdout prompts.
-- When scores improve, raise the floor with `npm run eval:routing -- --write-floor`. Lowering a floor or changing the holdout pin prints a loud warning, locally and as a CI annotation; it's allowed, but never silent.
+- When scores improve, raise the floor with `npm run eval:routing -- --write-floor`. Lowering a floor or changing any prompt prints a loud warning, locally and as a CI annotation; it's allowed, but never silent.
 
 ### Validating Package Artifact
 

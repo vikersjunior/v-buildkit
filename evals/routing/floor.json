@@ -68,5 +68,5 @@
     "which capability tools fit what we are building",
     "which installed skills should this project actually be using"
   ],
-  "holdoutSha256": "57d2a04f0e3b71f43fbc81043da1bfba14c44a8fcd91c750f03d1c96cff2617a"
+  "promptsSha256": "35769869f9bffdf2fcdf004aa1f75138046d08e3e3bf5310684029498ddf98ed"
 }

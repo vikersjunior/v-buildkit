@@ -67,8 +67,8 @@ test('the evaluation is deterministic', () => {
 });
 
 test('weakening floor.json is reported loudly', () => {
-  const weaker = { ...floor, overall: floor.overall - 1, holdoutSha256: 'changed' };
-  assert.deepEqual(route.floorChanges(floor, weaker), [`overall floor lowered ${floor.overall} -> ${floor.overall - 1}`, 'holdout pin (holdoutSha256) changed']);
+  const weaker = { ...floor, overall: floor.overall - 1, promptsSha256: 'changed' };
+  assert.deepEqual(route.floorChanges(floor, weaker), [`overall floor lowered ${floor.overall} -> ${floor.overall - 1}`, 'eval prompts changed (promptsSha256 pin updated)']);
   assert.deepEqual(route.floorChanges(floor, floor), []);
 
   // In CI, compare with the base branch (pull request) or the previous commit (push);

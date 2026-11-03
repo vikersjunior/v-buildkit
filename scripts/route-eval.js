@@ -103,8 +103,11 @@ function evaluate(root = ROOT, { descriptions = {} } = {}) {
   return result;
 }
 
-function holdoutSha256(evals) {
-  const all = Object.entries(evals).flatMap(([skill, sets]) => (sets.holdout || []).map(p => `${skill}\t${p}`)).sort();
+// Pins every prompt (train and holdout), so scores can't be moved by editing prompts instead of descriptions.
+function promptsSha256(evals) {
+  const all = Object.entries(evals)
+    .flatMap(([skill, sets]) => ['train', 'holdout'].flatMap(split => (sets[split] || []).map(p => `${skill}\t${split}\t${p}`)))
+    .sort();
   return crypto.createHash('sha256').update(all.join('\n')).digest('hex');
 }
 
@@ -116,7 +119,7 @@ function measureFloor(result, evals) {
     perSkill: result.perSkill,
     // Prompts that route correctly today must stay in the owner's top 3.
     top3: result.results.filter(r => r.ownerRank === 1).map(r => r.prompt).sort(),
-    holdoutSha256: holdoutSha256(evals)
+    promptsSha256: promptsSha256(evals)
   };
 }
 
@@ -125,6 +128,10 @@ function checkFloor(result, floor, evals) {
   const fails = [];
   for (const key of ['overall', 'train', 'holdout']) {
     if (result[key] < floor[key]) fails.push(`${key} rank-1 ${result[key]} < floor ${floor[key]}`);
+  }
+  // Every routed skill needs its own floor, so a new skill (or a deleted entry) can't go ungated.
+  for (const skill of Object.keys(result.perSkill)) {
+    if (!floor.perSkill[skill]) fails.push(`${skill} has no per-skill floor in floor.json; run --write-floor`);
   }
   for (const [skill, want] of Object.entries(floor.perSkill)) {
     const got = result.perSkill[skill] || { train: 0, holdout: 0 };
@@ -136,11 +143,11 @@ function checkFloor(result, floor, evals) {
     const r = byPrompt.get(prompt);
     if (r && r.ownerRank > 3) fails.push(`${r.split === 'holdout' ? 'a holdout prompt' : `"${prompt}"`} fell to rank ${r.ownerRank} for ${r.skill}`);
   }
-  if (holdoutSha256(evals) !== floor.holdoutSha256) fails.push('holdout prompts changed without updating holdoutSha256 in floor.json');
+  if (promptsSha256(evals) !== floor.promptsSha256) fails.push('eval prompts changed without updating promptsSha256 in floor.json; run --write-floor');
   return fails;
 }
 
-// Changes from an older floor that weaken the gate: lowered counts, a new holdout pin, dropped top-3 prompts.
+// Changes from an older floor that weaken the gate: lowered counts, changed prompts, dropped top-3 prompts.
 function floorChanges(before, after) {
   const changes = [];
   for (const key of ['overall', 'train', 'holdout']) {
@@ -153,7 +160,7 @@ function floorChanges(before, after) {
   }
   const dropped = (before.top3 || []).filter(p => !(after.top3 || []).includes(p)).length;
   if (dropped) changes.push(`${dropped} prompt(s) removed from the top-3 guard`);
-  if (before.holdoutSha256 !== after.holdoutSha256) changes.push('holdout pin (holdoutSha256) changed');
+  if (before.promptsSha256 !== after.promptsSha256) changes.push('eval prompts changed (promptsSha256 pin updated)');
   return changes;
 }
 
@@ -197,4 +204,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { tokens, loadSkills, loadEvals, ranker, evaluate, holdoutSha256, measureFloor, checkFloor, floorChanges, loudly };
+module.exports = { tokens, loadSkills, loadEvals, ranker, evaluate, promptsSha256, measureFloor, checkFloor, floorChanges, loudly };
