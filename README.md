@@ -72,6 +72,10 @@ graph TD
     H --> I["/audit"]
     I --> J["/complete"]
     J --> K["Progress / History"]
+    L["Bug or small change"] --> M["/investigate"]
+    M --> N["/fix"]
+    N --> O["Fix Approval"]
+    O --> G
 ```
 
 ### Lifecycle Stages
@@ -83,6 +87,8 @@ graph TD
 - **`/check`**: Verify implemented behavior against acceptance criteria.
 - **`/audit`**: Enforce mandatory quality, architecture, accessibility, and security checks.
 - **`/complete`**: Archive feature evidence and update project progress logs.
+- **`/investigate`**: Reproduce and localize a bug without editing anything, then hand off to `/fix`. Its read-only rule is an instruction to the agent; run it in your agent's read-only or plan permission mode to enforce it.
+- **`/fix`**: Write a short fix spec for a bug or small change and stop for approval; then `/implement` → `/check` → `/complete`. A fix for a `BLOCKING` finding also needs `/audit` before `/complete`, because only `/audit` closes the finding. Larger work goes to `/feature`. If a feature is already in progress, `/fix` offers to fold the bug into that feature or to fix it in a separate git worktree.
 
 ---
 
@@ -254,10 +260,14 @@ Run these workflow skills directly inside your AI coding agent environment:
 | **`/check`** | Verify implementation against acceptance criteria. |
 | **`/audit`** | Perform quality, architecture, accessibility, and security reviews. |
 | **`/complete`** | Formally close a feature, record history, and log progress. |
+| **`/investigate`** | Reproduce and localize a bug without editing anything. |
+| **`/fix`** | Write a short fix spec for a bug or small change, then stop for approval. |
 | **`/progress`** | Read out current project progress and feature status. |
 | **`/spec-review`** | Check specification files for internal drift. |
 | **`/tools-check`** | Audit active capability skills against project requirements. |
 | **`/distill-skill`** | Extract transferable project knowledge into a reusable agent skill. |
+
+In GitHub Copilot Chat (VS Code, JetBrains), `/fix` is also a built-in command and Copilot's docs don't say which one wins. If you get Copilot's own fix, ask for the skill by name ("use the BuildKit fix skill"). BuildKit doesn't use `/debug`, because Claude Code ships its own.
 
 ---
 

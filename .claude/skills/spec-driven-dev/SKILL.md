@@ -11,7 +11,7 @@ Generates six interlocking documents for any new coding project: `PRD.md`, `arch
 
 ## Where this fits in the full ideation-to-product system
 
-This skill is the core of a larger kit; the full lifecycle runs: `ideate` (turn a vague idea into a crisp brief — only if the idea isn't crisp yet) → `spec-init` (this skill's generation workflow, plus matching relevant tools from `.buildkit/skills-library/`) → approval gate → `implement` (looped per task, with a mandatory security gate) → `progress` / `spec-review` / `tools-check` as needed throughout → `distill-skill` at the end. Each of those is its own skill with its own file — this skill is specifically the six-file generation and maintenance engine at the center of that loop, not the whole system by itself.
+This skill is the core of a larger kit; the full lifecycle runs: `ideate` (turn a vague idea into a crisp brief — only if the idea isn't crisp yet) → `spec-init` (this skill's generation workflow, plus matching relevant tools from `.buildkit/skills-library/`) → approval gate → `implement` (looped per task, with a mandatory security gate) → `progress` / `spec-review` / `tools-check` as needed throughout → `distill-skill` at the end. Bugs and small changes take the short path: `investigate` (read-only diagnosis) → `fix` (a short spec, approved before code) → `implement`. Each of those is its own skill with its own file — this skill is specifically the six-file generation and maintenance engine at the center of that loop, not the whole system by itself.
 
 ## Documentation Root Resolution
 

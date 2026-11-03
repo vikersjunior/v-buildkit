@@ -10,6 +10,7 @@ Context reuse: if a file this skill needs was already read in this session and h
 - Read each `## Context` entry. Each must be `File.md § Heading` naming one of the six spec files in the documentation root; ignore any other path and say so in the report. If a heading is missing or renamed, or a needed fact is absent, read the owning file's relevant section and name it in the report.
 - An empty `## Context` or `- None` means the packet is complete. Do not read whole `PRD.md`, `architecture.md`, `Tech_stack.md` or `Implementation_plan.md` otherwise.
 - If `## Open questions` lists anything other than `- None`, stop before writing code, ask the user, and record the answer in `spec.md` first.
+- A spec whose first lines say `Type: fix` (written by `/fix`) has no plan task. Skip the `Implementation_plan.md` section here and wherever steps 7-9 name it: step 7 verifies against `acceptance.md` and `rules.md`; in step 8 add only a one-line Session Log entry (and a Decisions Made line if you made one), without moving plan tasks; step 9 applies only if the fix shows the plan itself is wrong.
 - A spec with no `## Context` section at all (written before this rule), or no feature spec, uses steps 1-4 below.
 
 0. If `.buildkit/state.md` exists and the current feature is `awaiting approval`, do not implement until the user explicitly approves it. Note: The project documentation files read below are resolved relative to the configured documentation root in `.buildkit/config.json` (defaulting to project root).
