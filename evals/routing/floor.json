@@ -1,7 +1,7 @@
 {
-  "overall": 30,
-  "train": 24,
-  "holdout": 6,
+  "overall": 37,
+  "train": 30,
+  "holdout": 7,
   "perSkill": {
     "distill-skill": {
       "train": 4,
@@ -16,7 +16,7 @@
       "holdout": 1
     },
     "progress": {
-      "train": 3,
+      "train": 4,
       "holdout": 0
     },
     "spec-driven-dev": {
@@ -24,11 +24,11 @@
       "holdout": 1
     },
     "spec-init": {
-      "train": 0,
-      "holdout": 0
+      "train": 3,
+      "holdout": 1
     },
     "spec-review": {
-      "train": 2,
+      "train": 4,
       "holdout": 1
     },
     "tools-check": {
@@ -42,18 +42,25 @@
     "I want to explore what a habit app could be before anyone writes specs",
     "are any of our skills clashing by name",
     "audit our installed helpers against the tech choices in the docs",
+    "before the next phase starts, find inconsistencies across our planning docs",
     "capture what we learned on this project for next time",
     "continue coding the approved phase",
+    "create the initial PRD, architecture and plan for my new habit tracker",
     "do the PRD and implementation plan still agree with each other",
+    "first day on a greenfield todo app, produce the starting spec set",
     "give me a status update on the project",
     "go ahead and code up the next step",
     "grab the following task from our plan and code it",
+    "have any unconfirmed assumptions been left in the documents",
     "help me brainstorm directions for a side project about dog walkers",
+    "how far along is the build",
     "keep going on the build",
+    "kick off a brand new recipe sharing site, nothing exists yet",
     "look for contradictions between the architecture doc and the stack doc",
     "milestone two shipped, reflect it in Progress.md",
     "rewrite rules.md now that we adopted strict TypeScript",
     "sanity-check that our six documents tell one consistent story",
+    "start a fresh project for a CLI that syncs notes to S3",
     "start coding whatever comes after the login task",
     "the architecture changed after the spike, bring architecture.md up to date",
     "the project is done, write the hard-won gotchas into something reusable",

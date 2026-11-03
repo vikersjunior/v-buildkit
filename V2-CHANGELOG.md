@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Changed
+- Sharper skill descriptions for `spec-init` (owns starting a new project from scratch), `spec-review` (read-only consistency check; updates belong to `spec-driven-dev`), `progress` and `ideate`, so agents pick the right one more often. If you customized one of these skills, `update` reports a conflict and keeps your text; use `update --dry-run`, then `--force` to back it up and take the new wording.
 - BuildKit now requires Node.js 22 or newer (`engines`), since Node 18 and 20 are past end-of-life. CI tests Node 22 and 24 on Linux, macOS and Windows.
 - Releases: the publish workflow fails when the tag doesn't match the `package.json` version, skips `npm publish` when that version is already on npm, and creates the GitHub release with generated notes.
 
