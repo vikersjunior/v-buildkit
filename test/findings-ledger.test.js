@@ -201,7 +201,8 @@ test('node .buildkit/bin/lint.js lints its own project and its exit code is the 
   lintWith(finding('F-001', 'BLOCKING', 'open'));
   let res = spawnSync(process.execPath, [vendored], { cwd: os.tmpdir(), encoding: 'utf8' });
   assert.equal(res.status, 1, res.stdout + res.stderr);
-  assert.match(res.stdout, new RegExp(`Lint — ${tmp.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')}`));
+  // __dirname is the real path (macOS: /var -> /private/var), so compare against tmp's real path.
+  assert.match(res.stdout, new RegExp(`Lint — ${fs.realpathSync(tmp).replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')}`));
   assert.match(res.stdout, /F-001 \[BLOCKING\] is open/);
   lintWith(finding('F-001', 'BLOCKING', 'closed', '- Verified in: .buildkit/audits/r.md'), { 'r.md': 'F-001 [BLOCKING] x\n' });
   res = spawnSync(process.execPath, [vendored], { cwd: os.tmpdir(), encoding: 'utf8' });
