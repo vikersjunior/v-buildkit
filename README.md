@@ -309,6 +309,30 @@ npx vikers-buildkit tokens
 
 *Estimates use ~4 characters per token; real counts vary by model.*
 
+### Lint
+
+Check the spec files for drift without spending model tokens. Lint is read-only: it never writes files or creates the target directory.
+
+```bash
+npx vikers-buildkit lint
+```
+
+| Check | Result |
+|---|---|
+| Some but not all six spec files exist | FAIL |
+| No spec files yet (before `/spec-init`) | WARN |
+| A template placeholder such as `[Project Name]` or `[TBD]` is left in a spec | FAIL |
+| `Progress.md`'s Current Phase is not a phase heading in `Implementation_plan.md` | FAIL |
+| A `**Assumption:**` tag is still in a spec | WARN |
+| `.buildkit/state.md` names a feature with no feature or history folder | WARN |
+
+Findings about a line in a file give the file and line number. Lint exits with status `1` when any check fails, so it works as a CI step. In CI, add `--strict` so that a missing BuildKit install or a project with no specs fails too (without it, both are only warnings, which suits a fresh project before `/spec-init`):
+
+```yaml
+- name: Check BuildKit specs
+  run: npx vikers-buildkit lint --strict
+```
+
 ---
 
 ## Safety & Non-Destructive Guarantees

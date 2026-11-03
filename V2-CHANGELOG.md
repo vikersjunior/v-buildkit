@@ -1,5 +1,10 @@
 # Viker's BuildKit Changelog
 
+## Unreleased
+
+### Added
+- `lint` command: read-only spec-drift checks that cost no model tokens. Flags a partial spec set, leftover template placeholders, a Current Phase that isn't in the plan, unconfirmed assumptions, and a Current Feature with no folder. Exits `1` on failures for CI.
+
 ## 2.6.0 — Token Economy
 
 ### Added
