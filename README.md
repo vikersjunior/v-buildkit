@@ -402,9 +402,12 @@ Releases are published through GitHub Actions using npm Trusted Publishing (OIDC
 
 Pushing a version tag (e.g. `v2.4.1`) triggers:
 
-1. Code checkout and Node.js setup
+1. A check that the tag matches the `package.json` version (`v2.4.1` needs `"version": "2.4.1"`); a mismatch fails the run before anything is published
 2. Automated test suite execution (`npm test`)
-3. Provenance-backed npm publication (`npm publish --provenance`)
+3. Provenance-backed npm publication (`npm publish --provenance`), skipped if that version is already on npm, so re-running a tag is safe
+4. A GitHub release for the tag with generated notes, grouped by the `enhancement`, `bug` and `documentation` labels
+
+BuildKit requires Node.js 22 or newer. CI tests Node 22 and 24 on Linux, macOS and Windows.
 
 ---
 
