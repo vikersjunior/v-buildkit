@@ -292,7 +292,7 @@ npx vikers-buildkit update
 
 *BuildKit preserves all user specification files, custom user skills, and feature history during updates.*
 
-BuildKit records a SHA-256 hash of every file it installs in `.buildkit/manifest.json`. On update, a managed file is replaced or removed only if it still matches that hash. If you edited a BuildKit skill, update stops without changing anything and lists the conflicts. Re-run with `--force` to back the edited files up to `.buildkit/backups/<timestamp>/` and replace them. Files a new release drops are removed only if you never edited them.
+BuildKit records a SHA-256 hash of every file it installs in `.buildkit/manifest.json`. On update, a managed file is replaced or removed only if it still matches that hash. If you edited a BuildKit skill, update stops without changing anything and lists the conflicts. Re-run with `--force` to back the edited files up to `.buildkit/backups/<timestamp>/` and replace them (backups are git-ignored, and the newest five runs are kept). Files a new release drops are removed only if you never edited them. An install made before change tracking existed has no record to compare against, so its first update backs up and replaces any file that differs.
 
 ### Repair
 

@@ -22,8 +22,9 @@ function installed() {
   return tmp;
 }
 
+// Same as BuildKit's manifest hash: text with CRLF folded to LF.
 function sha(text) {
-  return crypto.createHash('sha256').update(text).digest('hex');
+  return crypto.createHash('sha256').update(String(text).replace(/\r\n/g, '\n'), 'latin1').digest('hex');
 }
 
 function editManifest(tmp, fn) {
@@ -37,7 +38,7 @@ test('install records a hash manifest of managed files', () => {
   const tmp = installed();
   try {
     const manifest = JSON.parse(fs.readFileSync(path.join(tmp, '.buildkit', 'manifest.json'), 'utf8'));
-    assert.equal(manifest.files[SKILL_REL], sha(fs.readFileSync(path.join(tmp, SKILL))));
+    assert.equal(manifest.files[SKILL_REL], sha(fs.readFileSync(path.join(tmp, SKILL), 'latin1')));
     assert.ok(manifest.files['.buildkit/workflow-skills/feature/SKILL.md']);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
@@ -61,7 +62,7 @@ test('update refuses to overwrite a customized skill, and --force backs it up fi
     assert.equal(forced.status, 0, forced.stderr);
     assert.equal(fs.readFileSync(dest, 'utf8'), pristine);
     const backups = path.join(tmp, '.buildkit', 'backups');
-    const [stamp] = fs.readdirSync(backups);
+    const [stamp] = fs.readdirSync(backups).filter(n => n !== '.gitignore');
     assert.equal(fs.readFileSync(path.join(backups, stamp, SKILL), 'utf8'), 'my custom feature skill');
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
@@ -143,22 +144,114 @@ test('update --dry-run writes nothing', () => {
   }
 });
 
-test('update on a pre-manifest install treats differing files as conflicts', () => {
+test('update on a pre-manifest install backs up differing files and replaces them', () => {
   const tmp = installed();
+  const clean = installed();
   try {
     fs.rmSync(path.join(tmp, '.buildkit', 'manifest.json'));
-    fs.writeFileSync(path.join(tmp, SKILL), 'unknown provenance');
+    const dest = path.join(tmp, SKILL);
+    const pristine = fs.readFileSync(dest, 'utf8');
+    fs.writeFileSync(dest, 'unknown provenance');
 
     const res = run('update', tmp);
-    assert.equal(res.status, 1);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
     assert.match(res.stdout, /no baseline/);
     assert.match(res.stdout, /predates change tracking/);
+    assert.equal(fs.readFileSync(dest, 'utf8'), pristine);
+    const backups = path.join(tmp, '.buildkit', 'backups');
+    const [stamp] = fs.readdirSync(backups).filter(n => n !== '.gitignore');
+    assert.equal(fs.readFileSync(path.join(backups, stamp, SKILL), 'utf8'), 'unknown provenance');
 
-    const clean = installed();
     fs.rmSync(path.join(clean, '.buildkit', 'manifest.json'));
     assert.equal(run('update', clean).status, 0, 'identical legacy install updates cleanly');
     assert.ok(fs.existsSync(path.join(clean, '.buildkit', 'manifest.json')));
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
     fs.rmSync(clean, { recursive: true, force: true });
+  }
+});
+
+test('update refuses manifest paths that escape the project, even with --force', () => {
+  const tmp = installed();
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'buildkit-test-victim-'));
+  try {
+    const victim = path.join(outside, 'keep.txt');
+    fs.writeFileSync(victim, 'precious');
+    const escape = `.buildkit/workflow-skills/${path.relative(path.join(tmp, '.buildkit', 'workflow-skills'), victim).split(path.sep).join('/')}`;
+    for (const rel of [escape, '.buildkit/workflow-skills/..\\..\\x.md', '/etc/passwd', 'C:/x.md']) {
+      editManifest(tmp, files => { files[rel] = sha('precious'); });
+      for (const args of [[], ['--force']]) {
+        const res = run('update', tmp, ...args);
+        assert.equal(res.status, 1, `${rel} ${args}`);
+        assert.match(res.stdout, /unsafe path in \.buildkit\/manifest\.json/);
+        assert.equal(fs.readFileSync(victim, 'utf8'), 'precious');
+      }
+      editManifest(tmp, files => { delete files[rel]; });
+    }
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+    fs.rmSync(outside, { recursive: true, force: true });
+  }
+});
+
+test('update refuses to write through a symlinked parent directory', () => {
+  const tmp = installed();
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'buildkit-test-outside-'));
+  try {
+    const skillDir = path.join(tmp, '.claude', 'skills', 'feature');
+    fs.rmSync(skillDir, { recursive: true, force: true });
+    // A junction needs no extra privileges on Windows; elsewhere it is a plain dir symlink.
+    fs.symlinkSync(outside, skillDir, 'junction');
+    const res = run('update', tmp, '--force');
+    assert.equal(res.status, 1);
+    assert.match(res.stdout, /a parent directory resolves outside the project/);
+    assert.deepEqual(fs.readdirSync(outside), []);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+    fs.rmSync(outside, { recursive: true, force: true });
+  }
+});
+
+test('update treats a line-ending-only change as unchanged', () => {
+  const tmp = installed();
+  try {
+    const dest = path.join(tmp, SKILL);
+    const text = fs.readFileSync(dest, 'utf8');
+    const flipped = text.includes('\r\n') ? text.replace(/\r\n/g, '\n') : text.replace(/\n/g, '\r\n');
+    fs.writeFileSync(dest, flipped);
+    const res = run('update', tmp);
+    assert.equal(res.status, 0, res.stdout);
+    assert.doesNotMatch(res.stdout, /Conflict/);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('update treats a malformed manifest as missing instead of crashing', () => {
+  const tmp = installed();
+  try {
+    for (const files of [null, [], { [SKILL_REL]: 42 }]) {
+      fs.writeFileSync(path.join(tmp, '.buildkit', 'manifest.json'), JSON.stringify({ schemaVersion: 1, files }));
+      const res = run('update', tmp);
+      assert.equal(res.status, 0, `${JSON.stringify(files)}: ${res.stderr}`);
+      assert.doesNotMatch(res.stderr, /TypeError/);
+    }
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('update --force keeps backups out of git and keeps only the newest five', () => {
+  const tmp = installed();
+  try {
+    const backups = path.join(tmp, '.buildkit', 'backups');
+    for (let i = 0; i < 6; i++) fs.mkdirSync(path.join(backups, `2000-01-0${i + 1}T00-00-00-000Z`), { recursive: true });
+    fs.writeFileSync(path.join(tmp, SKILL), 'edited');
+    assert.equal(run('update', tmp, '--force').status, 0);
+    assert.equal(fs.readFileSync(path.join(backups, '.gitignore'), 'utf8'), '*\n');
+    const runs = fs.readdirSync(backups).filter(n => n !== '.gitignore').sort();
+    assert.equal(runs.length, 5);
+    assert.ok(!runs.includes('2000-01-01T00-00-00-000Z') && !runs.includes('2000-01-02T00-00-00-000Z'), 'oldest runs pruned');
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }

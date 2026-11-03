@@ -203,9 +203,38 @@ function copyFile(source, dest) {
 }
 
 const MANIFEST_PATH = path.join('.buildkit', 'manifest.json');
+const BACKUPS_KEPT = 5;
 
+// Text files hash with CRLF folded to LF, so a git checkout that converts line endings doesn't
+// make every managed file look edited. Files with a NUL byte (binary) are hashed as-is.
 function hashFile(file) {
-  return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+  let data = fs.readFileSync(file);
+  if (!data.subarray(0, 8000).includes(0)) data = Buffer.from(data.toString('latin1').replace(/\r\n/g, '\n'), 'latin1');
+  return crypto.createHash('sha256').update(data).digest('hex');
+}
+
+// Writes through a temp file and a rename, so an interrupted update never leaves a half-written file.
+function copyFileAtomic(source, dest) {
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  const tmp = `${dest}.buildkit-tmp-${process.pid}`;
+  fs.copyFileSync(source, tmp);
+  fs.renameSync(tmp, dest);
+}
+
+// Manifest paths are untrusted (.buildkit/ is usually committed): only plain relative posix paths.
+function isSafeRel(rel) {
+  return typeof rel === 'string' && !rel.includes('\\') && !rel.startsWith('/') && !/^[A-Za-z]:/.test(rel) &&
+    rel.split('/').every(seg => seg && seg !== '.' && seg !== '..');
+}
+
+// True when the deepest existing ancestor of dest resolves inside the project, so a symlinked
+// parent directory can't redirect a write or delete outside it.
+function parentInside(targetReal, dest) {
+  let dir = path.dirname(dest);
+  while (!fs.existsSync(dir)) dir = path.dirname(dir);
+  const real = fs.realpathSync(dir);
+  const prefix = targetReal.endsWith(path.sep) ? targetReal : targetReal + path.sep;
+  return real === targetReal || real.startsWith(prefix);
 }
 
 function listFiles(dir, prefix = '') {
@@ -245,7 +274,10 @@ function managedSources(target, agents) {
 function readManifest(target) {
   try {
     const data = JSON.parse(fs.readFileSync(path.join(target, MANIFEST_PATH), 'utf8'));
-    return data && typeof data.files === 'object' ? data : null;
+    const files = data && data.files;
+    const valid = files && typeof files === 'object' && !Array.isArray(files) &&
+      Object.values(files).every(hash => typeof hash === 'string');
+    return valid ? data : null;
   } catch {
     return null;
   }
@@ -256,7 +288,9 @@ function writeManifest(target, agents) {
   const sources = managedSources(target, agents).files;
   for (const [rel, source] of [...sources].sort(([a], [b]) => a.localeCompare(b))) files[rel] = hashFile(source);
   const data = { schemaVersion: 1, version: require('../package.json').version, files };
-  fs.writeFileSync(path.join(target, MANIFEST_PATH), JSON.stringify(data, null, 2) + '\n');
+  const dest = path.join(target, MANIFEST_PATH);
+  fs.writeFileSync(`${dest}.buildkit-tmp-${process.pid}`, JSON.stringify(data, null, 2) + '\n');
+  fs.renameSync(`${dest}.buildkit-tmp-${process.pid}`, dest);
 }
 
 // Sort managed files into add / update / remove / unchanged / conflict / blocked.
@@ -265,21 +299,27 @@ function writeManifest(target, agents) {
 function planUpdate(target, { files: sources, roots }, manifest) {
   const recorded = manifest ? manifest.files : {};
   const plan = { add: [], update: [], remove: [], unchanged: [], conflict: [], blocked: [] };
+  const targetReal = fs.realpathSync(target);
+  const outside = 'a parent directory resolves outside the project';
   for (const [rel, source] of sources) {
     const dest = path.join(target, ...rel.split('/'));
+    if (!parentInside(targetReal, dest)) { plan.blocked.push({ rel, reason: outside }); continue; }
     let stat = null;
     try { stat = fs.lstatSync(dest); } catch {}
     if (!stat) { plan.add.push({ rel, source }); continue; }
     if (!stat.isFile()) { plan.blocked.push({ rel, reason: 'not a regular file' }); continue; }
     const current = hashFile(dest);
+    const reason = recorded[rel] ? 'modified locally' : manifest ? 'already exists and was not installed by BuildKit' : 'no baseline (installed before manifest tracking)';
     if (current === hashFile(source)) plan.unchanged.push({ rel });
     else if (recorded[rel] === current) plan.update.push({ rel, source });
-    else plan.conflict.push({ rel, source, reason: recorded[rel] ? 'modified locally' : 'no baseline (installed before manifest tracking)' });
+    else plan.conflict.push({ rel, source, reason });
   }
   // Only prune recorded files under roots this update still manages.
   for (const [rel, hash] of Object.entries(recorded)) {
+    if (!isSafeRel(rel)) { plan.blocked.push({ rel, reason: 'unsafe path in .buildkit/manifest.json' }); continue; }
     if (sources.has(rel) || !roots.some(root => rel.startsWith(`${root}/`))) continue;
     const dest = path.join(target, ...rel.split('/'));
+    if (!parentInside(targetReal, dest)) { plan.blocked.push({ rel, reason: outside }); continue; }
     let stat = null;
     try { stat = fs.lstatSync(dest); } catch {}
     if (!stat) continue;
@@ -298,14 +338,27 @@ function removeEmptyParents(target, rel) {
   }
 }
 
+// Backups stay out of version control and only the newest BACKUPS_KEPT runs are kept.
+function prepareBackups(target) {
+  const root = path.join(target, '.buildkit', 'backups');
+  fs.mkdirSync(root, { recursive: true });
+  const ignore = path.join(root, '.gitignore');
+  if (!fs.existsSync(ignore)) fs.writeFileSync(ignore, '*\n');
+  const runs = fs.readdirSync(root, { withFileTypes: true }).filter(e => e.isDirectory()).map(e => e.name).sort();
+  for (const old of runs.slice(0, Math.max(0, runs.length - (BACKUPS_KEPT - 1)))) {
+    fs.rmSync(path.join(root, old), { recursive: true, force: true });
+  }
+  return path.join(root, new Date().toISOString().replace(/[:.]/g, '-'));
+}
+
 function applyUpdatePlan(target, plan, force) {
   let backupDir = null;
   if (force && plan.conflict.length) {
-    backupDir = path.join(target, '.buildkit', 'backups', new Date().toISOString().replace(/[:.]/g, '-'));
+    backupDir = prepareBackups(target);
     for (const { rel } of plan.conflict) copyFile(path.join(target, ...rel.split('/')), path.join(backupDir, ...rel.split('/')));
   }
   const writes = [...plan.add, ...plan.update, ...(force ? plan.conflict.filter(c => c.source) : [])];
-  for (const { rel, source } of writes) copyFile(source, path.join(target, ...rel.split('/')));
+  for (const { rel, source } of writes) copyFileAtomic(source, path.join(target, ...rel.split('/')));
   const removals = [...plan.remove, ...(force ? plan.conflict.filter(c => !c.source) : [])];
   for (const { rel } of removals) {
     fs.unlinkSync(path.join(target, ...rel.split('/')));
@@ -894,14 +947,19 @@ function update(options) {
     return;
   }
   if (plan.blocked.length) {
-    throw new Error('Update blocked: managed paths above are not regular files. Move them aside and re-run.');
+    throw new Error('Update blocked by the paths listed above. Nothing was changed. Fix or move them aside, then re-run.');
   }
-  if (plan.conflict.length && !options.force) {
-    const hint = manifest ? '' : ' This install predates change tracking, so any file that differs from the new release is reported.';
-    console.log(`\nUpdate stopped: ${plan.conflict.length} BuildKit-managed file(s) differ from what BuildKit installed.${hint}`);
+  // A pre-manifest install has no record of what BuildKit wrote, so any difference may be an old
+  // release rather than an edit: back the files up and replace them instead of stopping every upgrade.
+  const force = options.force || !manifest;
+  if (plan.conflict.length && !force) {
+    console.log(`\nUpdate stopped: ${plan.conflict.length} BuildKit-managed file(s) differ from what BuildKit installed.`);
     console.log('Nothing was changed. Re-run with --force to back them up to .buildkit/backups/ and replace them.');
     process.exitCode = 1;
     return;
+  }
+  if (plan.conflict.length && !manifest && !options.force) {
+    console.log(`\nThis install predates change tracking: backing up and replacing ${plan.conflict.length} file(s) that differ from the new release.`);
   }
 
   if (options.docsDir) {
@@ -914,7 +972,7 @@ function update(options) {
   const absDocsRoot = path.resolve(target, docsRootRel);
   fs.mkdirSync(absDocsRoot, { recursive: true });
 
-  const backupDir = applyUpdatePlan(target, plan, options.force);
+  const backupDir = applyUpdatePlan(target, plan, force);
   writeManifest(target, configured);
   console.log(`✓ Added ${plan.add.length}, updated ${plan.update.length}, removed ${plan.remove.length}, unchanged ${plan.unchanged.length} managed file(s)`);
   if (backupDir) console.log(`✓ Replaced ${plan.conflict.length} locally modified file(s); originals backed up to ${path.relative(target, backupDir)}/`);
