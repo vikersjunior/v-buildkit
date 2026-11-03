@@ -1,7 +1,9 @@
 ---
 name: spec-init
-description: Use this whenever the user describes a brand new project idea, app concept, or product they want to build and no PRD.md/architecture.md/Tech_stack.md/Implementation_plan.md/rules.md/Progress.md exist yet in the project. Also trigger on explicit invocation via "/spec-init", "bootstrap the spec", "set up spec-driven docs for this", or "generate the 6 files". Bootstraps the full spec-driven-development document set from a project idea, then gates on explicit user approval before any implementation code gets written.
+description: Bootstraps the six spec files (PRD.md, architecture.md, Tech_stack.md, Implementation_plan.md, rules.md, Progress.md) for a new project, then stops for approval before any code. Use for /spec-init, "bootstrap the spec", "generate the 6 files", or when the user describes a clear new project and none of these files exist. Use ideate for a vague idea.
 ---
+
+Context reuse: if a file this skill needs was already read in this session and has not changed since, reuse it. Reread only if it is absent from context, may have changed, or exact current text is needed.
 
 Invoke the `spec-driven-dev` skill's full generation workflow (see the sibling `spec-driven-dev` skill for the complete ownership rules, generation order, and file templates this depends on).
 

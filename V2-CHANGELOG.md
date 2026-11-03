@@ -4,6 +4,14 @@
 
 ### Added
 - `lint` command: read-only spec-drift checks that cost no model tokens. Flags a partial spec set, leftover template placeholders, a Current Phase that isn't in the plan, unconfirmed assumptions, and a Current Feature with no folder. Exits `1` on failures for CI.
+- `/feature` critiques its draft (missing states, implicit contracts, unobservable criteria, scope creep) and records material decisions the docs don't settle under `## Open questions` instead of guessing. `/implement` stops until they are answered.
+- Proportional-engineering rule 11 in the `rules.md` template: build only for a current need, prefer the smaller reversible design. It never relaxes the Security Gate. `/audit` reports proportionality findings at `MEDIUM` or lower.
+
+### Improved
+- `/feature` and `/implement` load less context. `/feature` reads `state.md`, `rules.md` and `Progress.md` in full, the plan item, and only the matching sections of `PRD.md`, `architecture.md` and `Tech_stack.md`, in at most 4 tool rounds. The spec lists the sections the implementer needs under `## Context`, and `/implement` reads that packet instead of the whole spec set.
+- Every workflow skill reuses files already read in the session instead of rereading them.
+- `/feature`, `/check`, `/audit` and `/complete` run only when you ask for them. Claude Code enforces this with `disable-model-invocation`; other agents get the same instruction in the skill text.
+- Shorter `spec-driven-dev`, `ideate`, `tools-check` and `spec-init` descriptions (each under 400 characters), so they cost less to keep loaded and trigger less often by mistake.
 
 ## 2.6.0 — Token Economy
 

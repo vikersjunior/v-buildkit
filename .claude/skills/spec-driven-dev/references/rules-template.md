@@ -35,7 +35,7 @@ If a rule would apply identically to every project regardless of stack ("always 
 ## Code
 9. [Language-specific strictness rule, e.g. "Use TypeScript strictly, avoid `any`"]
 10. Prefer reusable, composable components/functions over one-off duplicated logic.
-11. Avoid unnecessary abstraction — don't build a plugin system for a feature that will only ever have one implementation.
+11. Build for a current need. Add no abstraction, option, config, dependency, service or layer unless a current requirement needs it. When scale is unknown, choose the smaller design that is easy to reverse. This rule never relaxes the Security Gate rules below.
 12. Keep functions/components focused on one responsibility.
 13. Follow this project's established naming conventions (define them here once established, don't leave this generic).
 

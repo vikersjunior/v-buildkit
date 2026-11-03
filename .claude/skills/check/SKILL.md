@@ -1,8 +1,13 @@
 ---
 name: check
 description: Use this after /implement to verify the current feature against its approved .buildkit feature specification and acceptance criteria, including explicit /check requests.
+disable-model-invocation: true
 ---
 # Check — Feature Verification Gate
+
+Run only when the user explicitly asks for this command (for example by typing /check). Do not start it on your own initiative or chain into it from another skill.
+
+Context reuse: if a file this skill needs was already read in this session and has not changed since, reuse it. Reread only if it is absent from context, may have changed, or exact current text is needed.
 
 `/check` answers: does the implementation satisfy the approved feature contract?
 

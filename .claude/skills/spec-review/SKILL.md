@@ -3,6 +3,8 @@ name: spec-review
 description: Use this after any scope change, before starting a new implementation phase, periodically during a long-running project, or whenever explicitly invoked via "/spec-review", "check the specs for drift", or "are the docs still consistent". Checks the six spec files (PRD.md, architecture.md, Tech_stack.md, Implementation_plan.md, rules.md, Progress.md) for drift and internal contradiction.
 ---
 
+Context reuse: if a file this skill needs was already read in this session and has not changed since, reuse it. Reread only if it is absent from context, may have changed, or exact current text is needed.
+
 Read all six files from the configured project documentation root (defined in `.buildkit/config.json` under `docs.root`, defaulting to project root): `PRD.md`, `architecture.md`, `Tech_stack.md`, `Implementation_plan.md`, `rules.md`, `Progress.md`.
 
 Run the following checks and report findings — don't silently fix anything, report first:
