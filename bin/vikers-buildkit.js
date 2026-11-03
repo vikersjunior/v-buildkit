@@ -4,6 +4,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
+const crypto = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 const {
   readBuildkitConfig,
@@ -83,6 +84,8 @@ Options:
   --no-detect              Disable automatic agent detection.
   --with-blank-templates   Copy blank starter templates to the documentation root.
   --skip-capabilities      Skip capability detection.
+  --dry-run                (update) Show which managed files would change; write nothing.
+  --force                  (update) Replace locally modified managed files after backing them up.
   --strict                 lint: fail when BuildKit or the spec files are missing.
   -h, --help               Show this help message.
   -v, --version            Show version number.
@@ -144,6 +147,8 @@ function parseArgs(argv) {
     if (arg === '--help' || arg === '-h') { usage(); process.exit(0); }
     if (arg === '--version' || arg === '-v') { console.log(require('../package.json').version); process.exit(0); }
     if (arg === '--link') { options.link = true; continue; }
+    if (arg === '--dry-run') { options.dryRun = true; continue; }
+    if (arg === '--force') { options.force = true; continue; }
     if (arg === '--no-detect') { options.detect = false; continue; }
     if (arg === '--skip-capabilities') { options.capabilities = false; continue; }
     if (arg === '--strict') { options.strict = true; continue; }
@@ -195,6 +200,239 @@ function copyDir(source, dest) {
 function copyFile(source, dest) {
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   fs.copyFileSync(source, dest);
+}
+
+const MANIFEST_PATH = path.join('.buildkit', 'manifest.json');
+const BACKUPS_KEPT = 5;
+
+// Text files hash with CRLF folded to LF, so a git checkout that converts line endings doesn't
+// make every managed file look edited. Files with a NUL byte (binary) are hashed as-is.
+function hashFile(file) {
+  let data = fs.readFileSync(file);
+  if (!data.subarray(0, 8000).includes(0)) data = Buffer.from(data.toString('latin1').replace(/\r\n/g, '\n'), 'latin1');
+  return crypto.createHash('sha256').update(data).digest('hex');
+}
+
+// A random temp name, created exclusively, so a pre-planted file or link at that path can't redirect the write.
+function tempPath(dest) {
+  return `${dest}.buildkit-tmp-${crypto.randomBytes(8).toString('hex')}`;
+}
+
+// Writes through a temp file and a rename, so an interrupted update never leaves a half-written file.
+function copyFileAtomic(source, dest) {
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  const tmp = tempPath(dest);
+  try {
+    fs.copyFileSync(source, tmp, fs.constants.COPYFILE_EXCL);
+    fs.renameSync(tmp, dest);
+  } catch (err) {
+    try { fs.unlinkSync(tmp); } catch {}
+    throw err;
+  }
+}
+
+// Manifest paths are untrusted (.buildkit/ is usually committed): only plain relative posix paths.
+function isSafeRel(rel) {
+  return typeof rel === 'string' && !rel.includes('\\') && !rel.startsWith('/') && !/^[A-Za-z]:/.test(rel) &&
+    rel.split('/').every(seg => seg && seg !== '.' && seg !== '..');
+}
+
+// True when the deepest existing ancestor of dest resolves inside the project, so a symlinked
+// parent directory can't redirect a write or delete outside it.
+function parentInside(targetReal, dest) {
+  let dir = path.dirname(dest);
+  while (!fs.existsSync(dir)) dir = path.dirname(dir);
+  const real = fs.realpathSync(dir);
+  const prefix = targetReal.endsWith(path.sep) ? targetReal : targetReal + path.sep;
+  return real === targetReal || real.startsWith(prefix);
+}
+
+function listFiles(dir, prefix = '') {
+  const out = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) out.push(...listFiles(path.join(dir, entry.name), rel));
+    else if (entry.isFile()) out.push(rel);
+  }
+  return out;
+}
+
+function isSymlinkPath(file) {
+  try { return fs.lstatSync(file).isSymbolicLink(); } catch { return false; }
+}
+
+// Every file BuildKit owns in the target, as posix relPath -> package source file,
+// plus the roots under which recorded-but-obsolete files may be pruned.
+function managedSources(target, agents) {
+  const files = new Map();
+  const roots = ['.buildkit/workflow-skills', '.buildkit/skills-library'];
+  const addTree = (sourceDir, destRel) => {
+    for (const rel of listFiles(sourceDir)) files.set(`${destRel}/${rel}`, path.join(sourceDir, ...rel.split('/')));
+  };
+  addTree(WORKFLOW_SOURCE, roots[0]);
+  addTree(LIBRARY_SOURCE, roots[1]);
+  for (const agent of agents) {
+    const cfg = AGENTS[agent];
+    // Linked agent dirs resolve into .buildkit/workflow-skills, which is already tracked.
+    if (!cfg || isSymlinkPath(path.join(target, cfg.path))) continue;
+    roots.push(cfg.path);
+    for (const skill of WORKFLOW_SKILLS) addTree(path.join(WORKFLOW_SOURCE, skill), `${cfg.path}/${skill}`);
+  }
+  return { files, roots };
+}
+
+function readManifest(target) {
+  try {
+    const data = JSON.parse(fs.readFileSync(path.join(target, MANIFEST_PATH), 'utf8'));
+    const files = data && data.files;
+    const valid = files && typeof files === 'object' && !Array.isArray(files) &&
+      Object.values(files).every(hash => typeof hash === 'string');
+    return valid ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeManifest(target, agents) {
+  const files = {};
+  const sources = managedSources(target, agents).files;
+  for (const [rel, source] of [...sources].sort(([a], [b]) => a.localeCompare(b))) files[rel] = hashFile(source);
+  const data = { schemaVersion: 1, version: require('../package.json').version, files };
+  const dest = path.join(target, MANIFEST_PATH);
+  const tmp = tempPath(dest);
+  try {
+    fs.writeFileSync(tmp, JSON.stringify(data, null, 2) + '\n', { flag: 'wx' });
+    fs.renameSync(tmp, dest);
+  } catch (err) {
+    try { fs.unlinkSync(tmp); } catch {}
+    throw err;
+  }
+}
+
+// .buildkit/ is project state that is usually committed, so neither it, its backups folder nor the
+// manifest may be a link: a link would let install, repair or update read or write outside the project.
+function assertBuildkitContained(target) {
+  const targetReal = fs.realpathSync(target);
+  const checked = [
+    ['.buildkit', 'directory'], ['.buildkit/workflow-skills', 'directory'], ['.buildkit/skills-library', 'directory'],
+    ['.buildkit/backups', 'directory'], ['.buildkit/manifest.json', 'file']
+  ];
+  for (const [rel, kind] of checked) {
+    const abs = path.join(target, ...rel.split('/'));
+    let stat;
+    try { stat = fs.lstatSync(abs); } catch { continue; }
+    const rightKind = kind === 'directory' ? stat.isDirectory() : stat.isFile();
+    if (stat.isSymbolicLink() || !rightKind || !parentInside(targetReal, path.join(abs, 'x'))) {
+      throw new Error(`${rel} must be a real ${kind} inside the project, not a link. Nothing was changed.`);
+    }
+  }
+}
+
+// Sort managed files into add / update / remove / unchanged / conflict / blocked.
+// A file is only overwritten or removed when it still matches the hash BuildKit recorded,
+// so local edits are never lost silently.
+function planUpdate(target, { files: sources, roots }, manifest) {
+  const recorded = manifest ? manifest.files : {};
+  const plan = { add: [], update: [], remove: [], unchanged: [], conflict: [], blocked: [] };
+  const targetReal = fs.realpathSync(target);
+  const outside = 'a parent directory resolves outside the project';
+  for (const [rel, source] of sources) {
+    const dest = path.join(target, ...rel.split('/'));
+    if (!parentInside(targetReal, dest)) { plan.blocked.push({ rel, reason: outside }); continue; }
+    let stat = null;
+    try { stat = fs.lstatSync(dest); } catch {}
+    if (!stat) { plan.add.push({ rel, source }); continue; }
+    if (!stat.isFile()) { plan.blocked.push({ rel, reason: 'not a regular file' }); continue; }
+    const current = hashFile(dest);
+    const reason = recorded[rel] ? 'modified locally' : manifest ? 'already exists and was not installed by BuildKit' : 'no baseline (installed before manifest tracking)';
+    if (current === hashFile(source)) plan.unchanged.push({ rel });
+    else if (recorded[rel] === current) plan.update.push({ rel, source });
+    else plan.conflict.push({ rel, source, reason });
+  }
+  // Only prune recorded files under roots this update still manages.
+  for (const [rel, hash] of Object.entries(recorded)) {
+    if (!isSafeRel(rel)) { plan.blocked.push({ rel, reason: 'unsafe path in .buildkit/manifest.json' }); continue; }
+    if (sources.has(rel)) continue;
+    const root = roots.find(r => rel.startsWith(`${r}/`));
+    if (!root) continue;
+    // Agent skill folders also hold the user's own skills: only prune inside BuildKit's own skill names.
+    if (!root.startsWith('.buildkit/') && !WORKFLOW_SKILLS.includes(rel.slice(root.length + 1).split('/')[0])) continue;
+    const dest = path.join(target, ...rel.split('/'));
+    if (!parentInside(targetReal, dest)) { plan.blocked.push({ rel, reason: outside }); continue; }
+    let stat = null;
+    try { stat = fs.lstatSync(dest); } catch {}
+    if (!stat) continue;
+    if (!stat.isFile()) plan.blocked.push({ rel, reason: 'not a regular file' });
+    else if (hashFile(dest) === hash) plan.remove.push({ rel });
+    else plan.conflict.push({ rel, source: null, reason: 'obsolete file modified locally' });
+  }
+  return plan;
+}
+
+function removeEmptyParents(target, rel) {
+  const parts = rel.split('/').slice(0, -1);
+  while (parts.length > 1) {
+    try { fs.rmdirSync(path.join(target, ...parts)); } catch { return; }
+    parts.pop();
+  }
+}
+
+// Backups stay out of version control and only the newest BACKUPS_KEPT runs are kept.
+function prepareBackups(target) {
+  const root = path.join(target, '.buildkit', 'backups');
+  fs.mkdirSync(root, { recursive: true });
+  // Anything already at .gitignore (a file, or a link, even a dangling one) is left alone: on Windows
+  // 'wx' still follows a dangling link, so lstat first. 'wx' then covers the race on POSIX.
+  const ignore = path.join(root, '.gitignore');
+  let existing = null;
+  try { existing = fs.lstatSync(ignore); } catch {}
+  if (!existing) fs.writeFileSync(ignore, '*\n', { flag: 'wx' });
+  // Only prune real directories named like a backup run; never anything else that lives here.
+  const runs = fs.readdirSync(root, { withFileTypes: true })
+    .filter(e => e.isDirectory() && /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z$/.test(e.name))
+    .map(e => e.name).sort();
+  for (const old of runs.slice(0, Math.max(0, runs.length - (BACKUPS_KEPT - 1)))) {
+    fs.rmSync(path.join(root, old), { recursive: true, force: true });
+  }
+  return path.join(root, new Date().toISOString().replace(/[:.]/g, '-'));
+}
+
+function applyUpdatePlan(target, plan, force) {
+  const targetReal = fs.realpathSync(target);
+  // Re-check containment right before touching each path, so a folder swapped for a link after
+  // planning still can't redirect the write or delete.
+  const contained = rel => {
+    const dest = path.join(target, ...rel.split('/'));
+    if (!parentInside(targetReal, dest)) throw new Error(`${rel}: a parent directory now resolves outside the project; update stopped.`);
+    return dest;
+  };
+  let backupDir = null;
+  if (force && plan.conflict.length) {
+    backupDir = prepareBackups(target);
+    for (const { rel } of plan.conflict) copyFile(contained(rel), path.join(backupDir, ...rel.split('/')));
+  }
+  const writes = [...plan.add, ...plan.update, ...(force ? plan.conflict.filter(c => c.source) : [])];
+  for (const { rel, source } of writes) copyFileAtomic(source, contained(rel));
+  const removals = [...plan.remove, ...(force ? plan.conflict.filter(c => !c.source) : [])];
+  for (const { rel } of removals) {
+    fs.unlinkSync(contained(rel));
+    removeEmptyParents(target, rel);
+  }
+  return backupDir;
+}
+
+function printUpdatePlan(plan) {
+  const show = (label, items) => {
+    if (!items.length) return;
+    console.log(`${label} (${items.length}):`);
+    for (const item of items) console.log(`  ${item.rel}${item.reason ? ` — ${item.reason}` : ''}`);
+  };
+  show('Add', plan.add);
+  show('Update', plan.update);
+  show('Remove', plan.remove);
+  show('Conflict', plan.conflict);
+  show('Blocked', plan.blocked);
+  console.log(`Unchanged: ${plan.unchanged.length}`);
 }
 
 function prompt(message) {
@@ -418,6 +656,7 @@ function detectCapabilities(target, agents) {
 function install(options) {
   if (!fs.existsSync(WORKFLOW_SOURCE)) throw new Error('BuildKit workflow skills are missing from the package.');
   const target = resolveTarget(options.target);
+  assertBuildkitContained(target);
 
   const docsDirRel = selectDocsDir(options, target);
   writeBuildkitConfig(target, { docs: { root: docsDirRel } });
@@ -446,6 +685,7 @@ function install(options) {
   copyDir(WORKFLOW_SOURCE, workflowRoot);
   copyDir(LIBRARY_SOURCE, libraryRoot);
   for (const agent of agents) installAgent(target, workflowRoot, agent, options.link);
+  writeManifest(target, agents);
   writeAgentConfig(target, agents);
   if (options.capabilities) detectCapabilities(target, agents);
   if (options.templates) {
@@ -684,6 +924,7 @@ function repair(options) {
   const buildkitDir = path.join(target, '.buildkit');
   const workflowRoot = path.join(buildkitDir, 'workflow-skills');
   const libraryRoot = path.join(buildkitDir, 'skills-library');
+  assertBuildkitContained(target);
 
   console.log(`\nViker's BuildKit Repair — Repairing BuildKit state in ${target}\n`);
 
@@ -730,6 +971,7 @@ function repair(options) {
     }
   }
 
+  writeManifest(target, configured);
   writeAgentConfig(target, configured);
   detectCapabilities(target, configured);
 
@@ -744,8 +986,38 @@ function update(options) {
     console.log('BuildKit is not installed in this directory. Running clean install...');
     return install(options);
   }
+  assertBuildkitContained(target);
 
   console.log(`\nViker's BuildKit Update — Updating ${target}\n`);
+
+  let configured = getConfiguredAgents(target);
+  if (options.agent) {
+    configured = validateAgents(options.agent.split(',').map(normalizeAgent).filter(Boolean));
+  }
+  if (!configured.length) configured = ['claude'];
+
+  const manifest = readManifest(target);
+  const plan = planUpdate(target, managedSources(target, configured), manifest);
+  if (options.dryRun || plan.conflict.length || plan.blocked.length) printUpdatePlan(plan);
+  if (options.dryRun) {
+    console.log('\nDry run: no files were changed.');
+    return;
+  }
+  if (plan.blocked.length) {
+    throw new Error('Update blocked by the paths listed above. Nothing was changed. Fix or move them aside, then re-run.');
+  }
+  // A pre-manifest install has no record of what BuildKit wrote, so any difference may be an old
+  // release rather than an edit: back the files up and replace them instead of stopping every upgrade.
+  const force = options.force || !manifest;
+  if (plan.conflict.length && !force) {
+    console.log(`\nUpdate stopped: ${plan.conflict.length} BuildKit-managed file(s) differ from what BuildKit installed.`);
+    console.log('Nothing was changed. Re-run with --force to back them up to .buildkit/backups/ and replace them.');
+    process.exitCode = 1;
+    return;
+  }
+  if (plan.conflict.length && !manifest && !options.force) {
+    console.log(`\nThis install predates change tracking: backing up and replacing ${plan.conflict.length} file(s) that differ from the new release.`);
+  }
 
   if (options.docsDir) {
     const newDocsRel = normalizeDocsRoot(options.docsDir, target);
@@ -757,35 +1029,13 @@ function update(options) {
   const absDocsRoot = path.resolve(target, docsRootRel);
   fs.mkdirSync(absDocsRoot, { recursive: true });
 
-  const workflowRoot = path.join(buildkitDir, 'workflow-skills');
-  const libraryRoot = path.join(buildkitDir, 'skills-library');
-
-  copyDir(WORKFLOW_SOURCE, workflowRoot);
-  copyDir(LIBRARY_SOURCE, libraryRoot);
-  console.log('✓ Updated .buildkit/workflow-skills and .buildkit/skills-library');
-
-  let configured = getConfiguredAgents(target);
-  if (options.agent) {
-    configured = validateAgents(options.agent.split(',').map(normalizeAgent).filter(Boolean));
-  }
-  if (!configured.length) configured = ['claude'];
-
+  const backupDir = applyUpdatePlan(target, plan, force);
+  writeManifest(target, configured);
+  console.log(`✓ Added ${plan.add.length}, updated ${plan.update.length}, removed ${plan.remove.length}, unchanged ${plan.unchanged.length} managed file(s)`);
+  if (backupDir) console.log(`✓ Replaced ${plan.conflict.length} locally modified file(s); originals backed up to ${path.relative(target, backupDir)}/`);
   for (const agent of configured) {
     const cfg = AGENTS[agent];
-    if (!cfg) continue;
-    const dest = path.join(target, cfg.path);
-    let isSymlink = false;
-    try { isSymlink = fs.lstatSync(dest).isSymbolicLink(); } catch {}
-
-    if (!isSymlink) {
-      fs.mkdirSync(dest, { recursive: true });
-      for (const skill of WORKFLOW_SKILLS) {
-        copyDir(path.join(workflowRoot, skill), path.join(dest, skill));
-      }
-      console.log(`✓ Updated workflow skills in ${cfg.path}/`);
-    } else {
-      console.log(`✓ Preserved linked directory ${cfg.path}/`);
-    }
+    if (cfg && isSymlinkPath(path.join(target, cfg.path))) console.log(`✓ Preserved linked directory ${cfg.path}/`);
   }
 
   writeAgentConfig(target, configured);
