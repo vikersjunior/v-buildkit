@@ -1,6 +1,6 @@
 ---
 name: spec-review
-description: Use this after any scope change, before starting a new implementation phase, periodically during a long-running project, or whenever explicitly invoked via "/spec-review", "check the specs for drift", or "are the docs still consistent". Checks the six spec files (PRD.md, architecture.md, Tech_stack.md, Implementation_plan.md, rules.md, Progress.md) for drift and internal contradiction.
+description: Use after a scope change, before a new implementation phase, or for /spec-review, "check the specs for drift" or "are the docs still consistent". Read-only check of the six spec files (PRD.md, architecture.md, Tech_stack.md, Implementation_plan.md, rules.md, Progress.md) for drift, contradictions, inconsistencies and unconfirmed assumptions. Updating them belongs to spec-driven-dev.
 ---
 
 Context reuse: if a file this skill needs was already read in this session and has not changed since, reuse it. Reread only if it is absent from context, may have changed, or exact current text is needed.

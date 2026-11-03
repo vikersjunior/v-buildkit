@@ -1,6 +1,6 @@
 ---
 name: progress
-description: Use this when the user asks for a project status update ("where are we", "what's left", "status check") on a project using this spec-driven-development system, or explicitly invokes "/progress". Reports current status by reading Progress.md, or force-updates it first if recent work isn't reflected yet.
+description: Use this when the user asks for a project status update ("where are we", "what's left", "status check") or wants to know how far along things are on a project using this spec-driven-development system, or explicitly invokes "/progress". Reports current status by reading Progress.md, or force-updates it first if recent work isn't reflected yet.
 ---
 
 Context reuse: if a file this skill needs was already read in this session and has not changed since, reuse it. Reread only if it is absent from context, may have changed, or exact current text is needed.

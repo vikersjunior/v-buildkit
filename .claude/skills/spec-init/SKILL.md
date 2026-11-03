@@ -1,6 +1,6 @@
 ---
 name: spec-init
-description: Bootstraps the six spec files (PRD.md, architecture.md, Tech_stack.md, Implementation_plan.md, rules.md, Progress.md) for a new project, then stops for approval before any code. Use for /spec-init, "bootstrap the spec", "generate the 6 files", or when the user describes a clear new project and none of these files exist. Use ideate for a vague idea.
+description: Starts a new project by bootstrapping the initial six spec files (PRD.md, architecture.md, Tech_stack.md, Implementation_plan.md, rules.md, Progress.md) from scratch, then stops for approval before any code. Use for /spec-init, "bootstrap the spec", "generate the 6 files", or when the user kicks off a fresh, clearly described project and none of these files exist yet. Use ideate for a vague idea.
 ---
 
 Context reuse: if a file this skill needs was already read in this session and has not changed since, reuse it. Reread only if it is absent from context, may have changed, or exact current text is needed.
