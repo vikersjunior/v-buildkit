@@ -7,12 +7,14 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
   publish:
     name: Publish to npm Registry
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - name: Checkout repository
@@ -24,12 +26,50 @@ jobs:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Check tag matches package.json version
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          if [ "$GITHUB_REF_NAME" != "v$VERSION" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match package.json version v$VERSION"
+            exit 1
+          fi
+
+      # Re-running a tag whose version is already on npm skips the publish instead of failing with E403.
+      - name: Check whether this version is already published
+        id: published
+        run: |
+          if npm view "$(node -p "require('./package.json').name")@${GITHUB_REF_NAME#v}" version >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::${GITHUB_REF_NAME#v} is already on npm; skipping publish"
+          fi
+
       # Trusted publishing (OIDC) needs npm >= 11.5.1; Node 22 ships npm 10, which uploads without credentials and gets E404.
       - name: Upgrade npm for trusted publishing
+        if: steps.published.outputs.skip != 'true'
         run: npm install -g npm@11
 
       - name: Run test suite
+        if: steps.published.outputs.skip != 'true'
         run: npm test
 
       - name: Publish package to npm
+        if: steps.published.outputs.skip != 'true'
         run: npm publish --provenance --access public
+
+  release:
+    name: Create GitHub release
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Create release with generated notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::notice::Release $GITHUB_REF_NAME already exists"
+          else
+            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes --title "$GITHUB_REF_NAME"
+          fi

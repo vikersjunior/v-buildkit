@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+- BuildKit now requires Node.js 22 or newer (`engines`), since Node 18 and 20 are past end-of-life. CI tests Node 22 and 24 on Linux, macOS and Windows.
+- Releases: the publish workflow fails when the tag doesn't match the `package.json` version, skips `npm publish` when that version is already on npm, and creates the GitHub release with generated notes.
+
 ### Fixed
 - `update` no longer silently overwrites BuildKit skills you customized. Install, repair and update now record SHA-256 hashes of managed files in `.buildkit/manifest.json`. Update replaces a file only if it still matches its recorded hash, stops and lists conflicts otherwise, and with `--force` backs edited files up to `.buildkit/backups/<timestamp>/` before replacing them.
 - `update` now removes files that a new release dropped, but only when they are unmodified. Previously, stale files stayed installed.
