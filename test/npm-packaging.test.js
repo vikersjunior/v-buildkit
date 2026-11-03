@@ -31,6 +31,9 @@ test('npm pack --dry-run output includes required binaries and workflow files', 
   assert.match(output, /bin\/viker-buildkit\.js/);
   assert.match(output, /skills-library/);
   assert.match(output, /templates/);
+  assert.match(output, /\sLICENSE\s*$/m); // root LICENSE, not a nested one
+  assert.match(output, /THIRD_PARTY_NOTICES\.md/);
+  assert.match(output, /oklch-skill\/LICENSE/);
 });
 
 test('npm pack creates valid tarball that can be installed and executed', () => {
