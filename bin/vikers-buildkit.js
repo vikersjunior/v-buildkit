@@ -381,8 +381,12 @@ function removeEmptyParents(target, rel) {
 function prepareBackups(target) {
   const root = path.join(target, '.buildkit', 'backups');
   fs.mkdirSync(root, { recursive: true });
-  // 'wx' never follows a link (even a dangling one) at that path; an existing .gitignore is left alone.
-  try { fs.writeFileSync(path.join(root, '.gitignore'), '*\n', { flag: 'wx' }); } catch (err) { if (err.code !== 'EEXIST') throw err; }
+  // Anything already at .gitignore (a file, or a link, even a dangling one) is left alone: on Windows
+  // 'wx' still follows a dangling link, so lstat first. 'wx' then covers the race on POSIX.
+  const ignore = path.join(root, '.gitignore');
+  let existing = null;
+  try { existing = fs.lstatSync(ignore); } catch {}
+  if (!existing) fs.writeFileSync(ignore, '*\n', { flag: 'wx' });
   // Only prune real directories named like a backup run; never anything else that lives here.
   const runs = fs.readdirSync(root, { withFileTypes: true })
     .filter(e => e.isDirectory() && /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z$/.test(e.name))
