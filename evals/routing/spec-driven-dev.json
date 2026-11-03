@@ -1,0 +1,12 @@
+{
+  "train": [
+    "we dropped offline mode, update the PRD and architecture to match",
+    "milestone two shipped, reflect it in Progress.md",
+    "we switched from Postgres to SQLite, record that decision in the tech stack doc",
+    "rewrite rules.md now that we adopted strict TypeScript"
+  ],
+  "holdout": [
+    "payments moved out of v1, carry that through the requirements and the implementation plan",
+    "the architecture changed after the spike, bring architecture.md up to date"
+  ]
+}

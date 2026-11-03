@@ -1,0 +1,12 @@
+{
+  "train": [
+    "which installed skills should this project actually be using",
+    "I just added a bunch of new agents, are any relevant to our stack",
+    "are any of our skills clashing by name",
+    "which capability tools fit what we are building"
+  ],
+  "holdout": [
+    "we installed a design plugin last week, does it matter for this codebase",
+    "audit our installed helpers against the tech choices in the docs"
+  ]
+}

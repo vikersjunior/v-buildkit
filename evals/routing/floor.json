@@ -1,0 +1,72 @@
+{
+  "overall": 30,
+  "train": 24,
+  "holdout": 6,
+  "perSkill": {
+    "distill-skill": {
+      "train": 4,
+      "holdout": 1
+    },
+    "ideate": {
+      "train": 3,
+      "holdout": 0
+    },
+    "implement": {
+      "train": 4,
+      "holdout": 1
+    },
+    "progress": {
+      "train": 3,
+      "holdout": 0
+    },
+    "spec-driven-dev": {
+      "train": 4,
+      "holdout": 1
+    },
+    "spec-init": {
+      "train": 0,
+      "holdout": 0
+    },
+    "spec-review": {
+      "train": 2,
+      "holdout": 1
+    },
+    "tools-check": {
+      "train": 4,
+      "holdout": 2
+    }
+  },
+  "top3": [
+    "I have a fuzzy concept for an app and want to think it through before we commit",
+    "I just added a bunch of new agents, are any relevant to our stack",
+    "I want to explore what a habit app could be before anyone writes specs",
+    "are any of our skills clashing by name",
+    "audit our installed helpers against the tech choices in the docs",
+    "capture what we learned on this project for next time",
+    "continue coding the approved phase",
+    "do the PRD and implementation plan still agree with each other",
+    "give me a status update on the project",
+    "go ahead and code up the next step",
+    "grab the following task from our plan and code it",
+    "help me brainstorm directions for a side project about dog walkers",
+    "keep going on the build",
+    "look for contradictions between the architecture doc and the stack doc",
+    "milestone two shipped, reflect it in Progress.md",
+    "rewrite rules.md now that we adopted strict TypeScript",
+    "sanity-check that our six documents tell one consistent story",
+    "start coding whatever comes after the login task",
+    "the architecture changed after the spike, bring architecture.md up to date",
+    "the project is done, write the hard-won gotchas into something reusable",
+    "turn the lessons from phase two into a skill",
+    "we dropped offline mode, update the PRD and architecture to match",
+    "we installed a design plugin last week, does it matter for this codebase",
+    "we switched from Postgres to SQLite, record that decision in the tech stack doc",
+    "we wrapped the beta, save the painful lessons as a reusable playbook",
+    "what is left to do before launch",
+    "what transferable lessons should we keep from this build",
+    "where are we",
+    "which capability tools fit what we are building",
+    "which installed skills should this project actually be using"
+  ],
+  "holdoutSha256": "57d2a04f0e3b71f43fbc81043da1bfba14c44a8fcd91c750f03d1c96cff2617a"
+}

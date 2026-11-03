@@ -1,0 +1,12 @@
+{
+  "train": [
+    "kick off a brand new recipe sharing site, nothing exists yet",
+    "I know exactly what I want: an invoicing SaaS with Stripe, set up the project docs from scratch",
+    "start a fresh project for a CLI that syncs notes to S3",
+    "create the initial PRD, architecture and plan for my new habit tracker"
+  ],
+  "holdout": [
+    "new repo, empty folder: a booking app for barbers, get the foundation documents written",
+    "first day on a greenfield todo app, produce the starting spec set"
+  ]
+}

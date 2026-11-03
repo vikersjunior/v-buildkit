@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+# The test job only reads the repository.
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Test on ${{ matrix.os }} (Node ${{ matrix.node-version }})
@@ -19,6 +23,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # Full history, so the routing-eval test can compare floor.json with the base branch.
+          fetch-depth: 0
 
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4

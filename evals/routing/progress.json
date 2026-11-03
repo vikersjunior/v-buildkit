@@ -1,0 +1,12 @@
+{
+  "train": [
+    "where are we",
+    "what is left to do before launch",
+    "give me a status update on the project",
+    "how far along is the build"
+  ],
+  "holdout": [
+    "quick summary of what is done and what is next",
+    "remind me what phase we are in right now"
+  ]
+}
