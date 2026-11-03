@@ -2,8 +2,16 @@
 
 ## Unreleased
 
+### Fixed
+- `update` no longer silently overwrites BuildKit skills you customized. Install, repair and update now record SHA-256 hashes of managed files in `.buildkit/manifest.json`. Update replaces a file only if it still matches its recorded hash, stops and lists conflicts otherwise, and with `--force` backs edited files up to `.buildkit/backups/<timestamp>/` before replacing them.
+- `update` now removes files that a new release dropped, but only when they are unmodified. Previously, stale files stayed installed.
+- The first `update` of an install made before this release (no manifest yet) backs up any file that differs from the new release and replaces it, instead of stopping.
+- Hashes ignore CRLF/LF differences in text files, so a git checkout that converts line endings doesn't mark every skill as edited.
+- `update` refuses manifest paths that are absolute or contain `..` or `\`, and paths whose parent directory resolves outside the project, so a tampered `manifest.json` or a symlinked folder can't make it write or delete files elsewhere. `install`, `repair` and `update` refuse to run when `.buildkit/`, its `workflow-skills/`, `skills-library/` or `backups/` folder, or `manifest.json` is a link, and containment is re-checked right before each write. In agent skill folders, `update` only prunes inside BuildKit's own skills, never your own. Files are written via a randomly named, exclusively created temp file and a rename. Backups get a `.gitignore`, and only the newest five timestamped runs are kept.
+
 ### Added
 - `lint` command: read-only spec-drift checks that cost no model tokens. Flags a partial spec set, leftover template placeholders, a Current Phase that isn't in the plan, unconfirmed assumptions, and a Current Feature with no folder. Exits `1` on failures for CI.
+- `update --dry-run` prints the add, update, remove and conflict plan without writing anything.
 - `/feature` critiques its draft (missing states, implicit contracts, unobservable criteria, scope creep) and records material decisions the docs don't settle under `## Open questions` instead of guessing. `/implement` stops until they are answered.
 - Proportional-engineering rule 11 in the `rules.md` template: build only for a current need, prefer the smaller reversible design. It never relaxes the Security Gate. `/audit` reports proportionality findings at `MEDIUM` or lower.
 
