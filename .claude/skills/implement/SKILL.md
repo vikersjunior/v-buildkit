@@ -3,7 +3,7 @@ name: implement
 description: Use this whenever the user wants to continue building a project that already has an approved Implementation_plan.md and Progress.md — e.g. "let's keep building", "do the next task", "implement the next phase", or explicit "/implement". Picks up the next task from Implementation_plan.md and Progress.md, implements it following rules.md, then updates Progress.md.
 ---
 
-0. If `.buildkit/state.md` exists and the current feature is `awaiting approval`, do not implement until the user explicitly approves it. Note: All BuildKit project documentation files (`Progress.md`, `Implementation_plan.md`, `rules.md`, `Tech_stack.md`, `architecture.md`, `PRD.md`) are resolved relative to the configured documentation root in `.buildkit/config.json` (defaulting to project root).
+0. If `.buildkit/state.md` exists and the current feature is `awaiting approval`, do not implement until the user explicitly approves it. Note: The project documentation files read below are resolved relative to the configured documentation root in `.buildkit/config.json` (defaulting to project root).
 1. Read `Progress.md` (in configured documentation root) to determine current phase and next task(s).
 2. Read `Implementation_plan.md` to confirm the exact scope and Definition of Done for that task.
 3. Read `rules.md` and follow it strictly during implementation — coding conventions, dependency constraints, testing bar.

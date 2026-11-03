@@ -11,6 +11,7 @@ Completion requires: approved feature spec, implementation, passing `/check`, no
 3. Move `.buildkit/features/<slug>/` to `.buildkit/history/<slug>/` preserving evidence.
 4. Add a completion record.
 5. Update `Progress.md` according to its ownership rules.
+5a. Rotate `Progress.md` as its writing rules describe: collapse finished-phase tasks to one line per phase and keep only the latest 10 Session Log entries, appending everything removed to `.buildkit/history/progress-archive.md` under a dated heading. Never rotate "Decisions Made" or "Known Issues".
 6. Clear/update `.buildkit/state.md`.
 7. Flag any plan/spec drift for `/spec-review`.
 
