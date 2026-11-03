@@ -8,7 +8,8 @@
     "viker-buildkit": "bin/vikers-buildkit.js"
   },
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "eval:routing": "node scripts/route-eval.js"
   },
   "files": [
     "bin/",

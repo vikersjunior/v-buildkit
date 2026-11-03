@@ -1,0 +1,12 @@
+{
+  "train": [
+    "do the PRD and implementation plan still agree with each other",
+    "look for contradictions between the architecture doc and the stack doc",
+    "before the next phase starts, find inconsistencies across our planning docs",
+    "have any unconfirmed assumptions been left in the documents"
+  ],
+  "holdout": [
+    "sanity-check that our six documents tell one consistent story",
+    "are the requirements and the architecture out of sync after last week"
+  ]
+}

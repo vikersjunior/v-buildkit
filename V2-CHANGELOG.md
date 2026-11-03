@@ -16,6 +16,7 @@
 ### Added
 - `lint` command: read-only spec-drift checks that cost no model tokens. Flags a partial spec set, leftover template placeholders, a Current Phase that isn't in the plan, unconfirmed assumptions, and a Current Feature with no folder. Exits `1` on failures for CI.
 - `update --dry-run` prints the add, update, remove and conflict plan without writing anything.
+- Skill routing evals (repo only, not shipped): `npm run eval:routing` ranks the model-routed skills' descriptions against plain-language prompts, and `npm test` fails if routing drops below the recorded floor.
 - `/feature` critiques its draft (missing states, implicit contracts, unobservable criteria, scope creep) and records material decisions the docs don't settle under `## Open questions` instead of guessing. `/implement` stops until they are answered.
 - Proportional-engineering rule 11 in the `rules.md` template: build only for a current need, prefer the smaller reversible design. It never relaxes the Security Gate. `/audit` reports proportionality findings at `MEDIUM` or lower.
 

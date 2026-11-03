@@ -1,0 +1,12 @@
+{
+  "train": [
+    "keep going on the build",
+    "grab the following task from our plan and code it",
+    "continue coding the approved phase",
+    "start coding whatever comes after the login task"
+  ],
+  "holdout": [
+    "carry on with development where we left off",
+    "go ahead and code up the next step"
+  ]
+}

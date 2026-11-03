@@ -1,0 +1,12 @@
+{
+  "train": [
+    "capture what we learned on this project for next time",
+    "the project is done, write the hard-won gotchas into something reusable",
+    "turn the lessons from phase two into a skill",
+    "what transferable lessons should we keep from this build"
+  ],
+  "holdout": [
+    "package up the tricks we figured out so the next app starts smarter",
+    "we wrapped the beta, save the painful lessons as a reusable playbook"
+  ]
+}

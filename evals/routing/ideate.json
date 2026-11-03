@@ -1,0 +1,12 @@
+{
+  "train": [
+    "I have a fuzzy concept for an app and want to think it through before we commit",
+    "help me brainstorm directions for a side project about dog walkers",
+    "is this startup notion any good? poke holes in it with me",
+    "I want to explore what a habit app could be before anyone writes specs"
+  ],
+  "holdout": [
+    "we are toying with a marketplace thing but the shape is unclear, talk it over with me",
+    "sharpen my half-baked plan for a budgeting tool into something concrete"
+  ]
+}
