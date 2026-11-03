@@ -1,5 +1,24 @@
 # Viker's BuildKit Changelog
 
+## 2.6.0 — Token Economy
+
+### Added
+- `tokens` command: estimates the context tokens each workflow command loads (skill body plus the project files it reads), so growing specs are easy to spot.
+- `LICENSE` (MIT, Copyright (c) 2026 Orim Studio) and `THIRD_PARTY_NOTICES.md` for the bundled external-community skills, both now shipped in the npm package.
+- Missing upstream `LICENSE` for `oklch-skill/` and the Apache-2.0 `NOTICE.md` for `impeccable-skill/`.
+
+### Improved
+- `/complete` rotates `Progress.md`: finished-phase tasks collapse to one line per phase and only the latest 10 Session Log entries stay. Removed lines are appended to `.buildkit/history/progress-archive.md`, never deleted. "Decisions Made" and "Known Issues" are never rotated.
+- `/spec-review` treats archived phases as complete, and `/distill-skill` reads the archive as a session log.
+- `/implement` no longer points agents at `PRD.md`, which its steps never use (about 600 fewer tokens per run).
+- `spec-driven-dev` loads its rarely needed sections on demand from `references/` (`other-skills.md`, `sub-projects.md`, `background.md`). The skill text drops from about 5,300 to 3,200 tokens.
+
+### Fixed
+- Test suite on Windows: `npm test` ran no tests on Node 18/20, and the `npm pack` tests could not start `npm`.
+
+### Upgrading
+- Run `npx vikers-buildkit update` to pull the new skill files. Specs, state and history are untouched; `Progress.md` is rotated the next time `/complete` runs.
+
 ## 2.5.0 — Configurable Project Documentation Root
 
 ### Added
