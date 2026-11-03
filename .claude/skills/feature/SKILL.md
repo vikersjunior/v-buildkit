@@ -13,7 +13,7 @@ Context reuse: if a file this skill needs was already read in this session and h
 
 Spec files are resolved from the configured documentation root in `.buildkit/config.json` (defaulting to project root). Gather context in at most 4 tool rounds:
 
-- Read `.buildkit/state.md` first. If another feature is active or awaiting approval, report it and stop instead of starting a second one.
+- Read `.buildkit/state.md` first. If a different feature is active or awaiting approval, report it and stop instead of starting a second one. Revising the feature already recorded there is allowed.
 - Read `rules.md` in full; it holds the project-wide rules, including the Security Gate.
 - Read `Progress.md` and the item's section of `Implementation_plan.md` to pick the item.
 - For `PRD.md`, `architecture.md` and `Tech_stack.md`, search for the item's names and terms and read the headings plus the matching sections only, not whole files.
