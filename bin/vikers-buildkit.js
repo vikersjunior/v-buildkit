@@ -313,7 +313,11 @@ function writeManifest(target, agents) {
 // manifest may be a link: a link would let install, repair or update read or write outside the project.
 function assertBuildkitContained(target) {
   const targetReal = fs.realpathSync(target);
-  for (const [rel, kind] of [['.buildkit', 'directory'], ['.buildkit/backups', 'directory'], ['.buildkit/manifest.json', 'file']]) {
+  const checked = [
+    ['.buildkit', 'directory'], ['.buildkit/workflow-skills', 'directory'], ['.buildkit/skills-library', 'directory'],
+    ['.buildkit/backups', 'directory'], ['.buildkit/manifest.json', 'file']
+  ];
+  for (const [rel, kind] of checked) {
     const abs = path.join(target, ...rel.split('/'));
     let stat;
     try { stat = fs.lstatSync(abs); } catch { continue; }
@@ -348,7 +352,11 @@ function planUpdate(target, { files: sources, roots }, manifest) {
   // Only prune recorded files under roots this update still manages.
   for (const [rel, hash] of Object.entries(recorded)) {
     if (!isSafeRel(rel)) { plan.blocked.push({ rel, reason: 'unsafe path in .buildkit/manifest.json' }); continue; }
-    if (sources.has(rel) || !roots.some(root => rel.startsWith(`${root}/`))) continue;
+    if (sources.has(rel)) continue;
+    const root = roots.find(r => rel.startsWith(`${r}/`));
+    if (!root) continue;
+    // Agent skill folders also hold the user's own skills: only prune inside BuildKit's own skill names.
+    if (!root.startsWith('.buildkit/') && !WORKFLOW_SKILLS.includes(rel.slice(root.length + 1).split('/')[0])) continue;
     const dest = path.join(target, ...rel.split('/'));
     if (!parentInside(targetReal, dest)) { plan.blocked.push({ rel, reason: outside }); continue; }
     let stat = null;
@@ -373,8 +381,8 @@ function removeEmptyParents(target, rel) {
 function prepareBackups(target) {
   const root = path.join(target, '.buildkit', 'backups');
   fs.mkdirSync(root, { recursive: true });
-  const ignore = path.join(root, '.gitignore');
-  if (!fs.existsSync(ignore)) fs.writeFileSync(ignore, '*\n');
+  // 'wx' never follows a link (even a dangling one) at that path; an existing .gitignore is left alone.
+  try { fs.writeFileSync(path.join(root, '.gitignore'), '*\n', { flag: 'wx' }); } catch (err) { if (err.code !== 'EEXIST') throw err; }
   // Only prune real directories named like a backup run; never anything else that lives here.
   const runs = fs.readdirSync(root, { withFileTypes: true })
     .filter(e => e.isDirectory() && /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z$/.test(e.name))
@@ -386,16 +394,24 @@ function prepareBackups(target) {
 }
 
 function applyUpdatePlan(target, plan, force) {
+  const targetReal = fs.realpathSync(target);
+  // Re-check containment right before touching each path, so a folder swapped for a link after
+  // planning still can't redirect the write or delete.
+  const contained = rel => {
+    const dest = path.join(target, ...rel.split('/'));
+    if (!parentInside(targetReal, dest)) throw new Error(`${rel}: a parent directory now resolves outside the project; update stopped.`);
+    return dest;
+  };
   let backupDir = null;
   if (force && plan.conflict.length) {
     backupDir = prepareBackups(target);
-    for (const { rel } of plan.conflict) copyFile(path.join(target, ...rel.split('/')), path.join(backupDir, ...rel.split('/')));
+    for (const { rel } of plan.conflict) copyFile(contained(rel), path.join(backupDir, ...rel.split('/')));
   }
   const writes = [...plan.add, ...plan.update, ...(force ? plan.conflict.filter(c => c.source) : [])];
-  for (const { rel, source } of writes) copyFileAtomic(source, path.join(target, ...rel.split('/')));
+  for (const { rel, source } of writes) copyFileAtomic(source, contained(rel));
   const removals = [...plan.remove, ...(force ? plan.conflict.filter(c => !c.source) : [])];
   for (const { rel } of removals) {
-    fs.unlinkSync(path.join(target, ...rel.split('/')));
+    fs.unlinkSync(contained(rel));
     removeEmptyParents(target, rel);
   }
   return backupDir;

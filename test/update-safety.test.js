@@ -277,6 +277,61 @@ test('install, repair and update refuse a linked .buildkit', () => {
   }
 });
 
+test('a manifest entry for a user skill in an agent folder never prunes it', () => {
+  const tmp = installed();
+  try {
+    const own = path.join(tmp, '.claude', 'skills', 'my-skill', 'SKILL.md');
+    fs.mkdirSync(path.dirname(own), { recursive: true });
+    fs.writeFileSync(own, 'mine, committed to the repo');
+    editManifest(tmp, files => { files['.claude/skills/my-skill/SKILL.md'] = sha('mine, committed to the repo'); });
+    assert.equal(run('update', tmp).status, 0);
+    assert.equal(fs.readFileSync(own, 'utf8'), 'mine, committed to the repo');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('install and update refuse a linked .buildkit/workflow-skills', () => {
+  const tmp = installed();
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'buildkit-test-outside-'));
+  try {
+    const skills = path.join(tmp, '.buildkit', 'workflow-skills');
+    fs.rmSync(skills, { recursive: true, force: true });
+    fs.symlinkSync(outside, skills, 'junction');
+    for (const cmd of ['install', 'update']) {
+      const res = run(cmd, tmp, '--agent', 'claude', '--no-detect');
+      assert.equal(res.status, 1, cmd);
+      assert.match(res.stderr, /\.buildkit\/workflow-skills must be a real directory inside the project/, cmd);
+    }
+    assert.deepEqual(fs.readdirSync(outside), []);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+    fs.rmSync(outside, { recursive: true, force: true });
+  }
+});
+
+test('update --force does not follow a dangling .gitignore link in backups', (t) => {
+  const tmp = installed();
+  const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'buildkit-test-outside-'));
+  try {
+    const backups = path.join(tmp, '.buildkit', 'backups');
+    fs.mkdirSync(backups, { recursive: true });
+    try {
+      fs.symlinkSync(path.join(outside, 'planted'), path.join(backups, '.gitignore'));
+    } catch (err) {
+      if (err.code !== 'EPERM') throw err;
+      t.skip('file symlinks need Developer Mode or an elevated shell on Windows');
+      return;
+    }
+    fs.writeFileSync(path.join(tmp, SKILL), 'edited');
+    assert.equal(run('update', tmp, '--force').status, 0);
+    assert.ok(!fs.existsSync(path.join(outside, 'planted')), 'nothing written through the link');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+    fs.rmSync(outside, { recursive: true, force: true });
+  }
+});
+
 test('update refuses a symlinked manifest', (t) => {
   const tmp = installed();
   const outside = fs.mkdtempSync(path.join(os.tmpdir(), 'buildkit-test-outside-'));
