@@ -1,5 +1,14 @@
 # Viker's BuildKit Changelog
 
+## Unreleased
+
+### Fixed
+- `update` no longer silently overwrites BuildKit skills you customized. Install, repair and update now record SHA-256 hashes of managed files in `.buildkit/manifest.json`. Update replaces a file only if it still matches its recorded hash, stops and lists conflicts otherwise, and with `--force` backs edited files up to `.buildkit/backups/<timestamp>/` before replacing them.
+- `update` now removes files that a new release dropped, but only when they are unmodified. Previously, stale files stayed installed.
+
+### Added
+- `update --dry-run` prints the add, update, remove and conflict plan without writing anything.
+
 ## 2.6.0 — Token Economy
 
 ### Added

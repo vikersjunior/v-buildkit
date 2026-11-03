@@ -286,10 +286,13 @@ npx vikers-buildkit doctor
 Safely update workflow skills and capability libraries to the latest BuildKit version:
 
 ```bash
+npx vikers-buildkit update --dry-run   # preview: add / update / remove / conflict per file
 npx vikers-buildkit update
 ```
 
 *BuildKit preserves all user specification files, custom user skills, and feature history during updates.*
+
+BuildKit records a SHA-256 hash of every file it installs in `.buildkit/manifest.json`. On update, a managed file is replaced or removed only if it still matches that hash. If you edited a BuildKit skill, update stops without changing anything and lists the conflicts. Re-run with `--force` to back the edited files up to `.buildkit/backups/<timestamp>/` and replace them. Files a new release drops are removed only if you never edited them.
 
 ### Repair
 
