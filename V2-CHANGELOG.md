@@ -1,6 +1,8 @@
 # Viker's BuildKit Changelog
 
-## Unreleased
+## 2.7.0-rc.2 — Release candidate fixes
+
+Release candidate on the npm `next` tag: `npx vikers-buildkit@next update`. Fixes from testing rc.1 on a real project; everything in rc.1 below still applies.
 
 ### Fixed
 - `node .buildkit/bin/lint.js` (and so `/complete`) crashed with `require is not defined in ES module scope` in projects whose `package.json` says `"type": "module"`. BuildKit now ships `.buildkit/package.json` with `{"type": "commonjs"}` next to the checker.
@@ -46,7 +48,7 @@ Release candidate on the npm `next` tag: `npx vikers-buildkit@next update`. `npx
 ### Upgrading
 - Node.js 22 or newer is required.
 - Run `npx vikers-buildkit@next update` (`npx vikers-buildkit update` once 2.7.0 is out). Your specs, `.buildkit/state.md`, features and history are untouched.
-- The first update from 2.6.0 has no manifest to compare against, so it backs up every BuildKit file that differs from the new release to `.buildkit/backups/<timestamp>/` and replaces it. Re-apply any skill customizations from that backup. From then on, `update` stops on customized files and lists them as conflicts; run `update --dry-run` first, and `--force` to back them up and take the new version.
+- The first update from 2.4–2.6 has no manifest to compare against. From rc.2 on, it updates any file that still matches a published BuildKit release and only backs up files you changed, to `.buildkit/backups/<timestamp>/`, before replacing them; re-apply your customizations from that backup. (rc.1 backed up every file that differed.) From then on, `update` stops on customized files and lists them as conflicts; run `update --dry-run` first, and `--force` to back them up and take the new version.
 - The update adds the `fix` and `investigate` skills and the lint checker in `.buildkit/bin/` and `.buildkit/lib/`. Until you update, `doctor` reports the checker as missing.
 - Gates are stricter: `/complete` now runs `node .buildkit/bin/lint.js` and refuses on any lint failure (spec placeholders, a Current Phase missing from the plan, an open or unverified BLOCKING finding). If your CI runs `npx vikers-buildkit lint --strict`, it now fails while a BLOCKING finding is open.
 - Older audit reports stay where they are; the next `/audit` carries their BLOCKING and HIGH findings into `.buildkit/findings.md`.

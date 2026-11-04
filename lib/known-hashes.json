@@ -2,7 +2,8 @@
   "versions": [
     "2.4.0",
     "2.5.0",
-    "2.6.0"
+    "2.6.0",
+    "2.7.0-rc.1"
   ],
   "files": {
     ".claude/skills/audit/SKILL.md": [
@@ -58,6 +59,9 @@
     ".claude/skills/tools-check/SKILL.md": [
       "47e849f2f386ca9d610ec683ea61b8d5b1e20521302f6cc117644f15497f250c",
       "642c7fddc19b1a4e451c9e49732a00bd32bae4f706679a6582e0a64b0cd65654"
+    ],
+    "lib/lint.js": [
+      "e264f1404b0ea83645d07fd18e244d7260054eabf8249c9e84429e6c6483d685"
     ]
   }
 }
