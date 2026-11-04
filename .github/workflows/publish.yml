@@ -52,9 +52,16 @@ jobs:
         if: steps.published.outputs.skip != 'true'
         run: npm test
 
+      # A prerelease version (one with a hyphen, e.g. 2.7.0-rc.1) goes to the "next" dist-tag, so
+      # `npm install vikers-buildkit` keeps getting the last stable release. npm 11 refuses to publish
+      # a prerelease without an explicit --tag anyway.
       - name: Publish package to npm
         if: steps.published.outputs.skip != 'true'
-        run: npm publish --provenance --access public
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          if [[ "$VERSION" == *-* ]]; then DIST_TAG=next; else DIST_TAG=latest; fi
+          echo "Publishing $VERSION with dist-tag $DIST_TAG"
+          npm publish --provenance --access public --tag "$DIST_TAG"
 
   release:
     name: Create GitHub release
@@ -71,5 +78,8 @@ jobs:
           if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "::notice::Release $GITHUB_REF_NAME already exists"
           else
-            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes --title "$GITHUB_REF_NAME"
+            # Prerelease tags (v2.7.0-rc.1) become GitHub prereleases, so they never show as "Latest".
+            PRERELEASE=""
+            if [[ "$GITHUB_REF_NAME" == *-* ]]; then PRERELEASE="--prerelease"; fi
+            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes --title "$GITHUB_REF_NAME" $PRERELEASE
           fi
