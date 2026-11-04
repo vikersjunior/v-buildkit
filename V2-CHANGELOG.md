@@ -1,26 +1,6 @@
 # Viker's BuildKit Changelog
 
-## 2.7.0-rc.3 — Fix-loop bookkeeping
-
-Release candidate on the npm `next` tag: `npx vikers-buildkit@next update`. Fixes from running the whole fix loop (`/fix` → `/implement` → `/check` → `/complete`) on a real project with rc.2; everything in rc.2 and rc.1 below still applies. Customized copies of `implement`, `complete`, `fix` or `feature` show as `update` conflicts.
-
-### Fixed
-- `/implement` records your approval: once you approve a spec that is awaiting approval, it sets `.buildkit/state.md`'s Lifecycle Gate to `approved (by the user, <date>)` before writing code. Previously no skill changed it.
-- A `/fix` is logged once. `/implement` adds its line to `Progress.md`, and `/complete` no longer adds a second one. If `Progress.md` has no Session Log section, `/implement` uses the one log or history section the file already has, or skips the line and says so; it never creates a new section.
-- `/complete` writes its completion record to `.buildkit/history/<slug>/completion.md`: the date, who approved the spec, the `/check` result, the lint result, the findings touched and any drift. It then sets `state.md` to no current feature and records the last completed one.
-
-## 2.7.0-rc.2 — Release candidate fixes
-
-Release candidate on the npm `next` tag: `npx vikers-buildkit@next update`. Fixes from testing rc.1 on a real project; everything in rc.1 below still applies.
-
-### Fixed
-- `node .buildkit/bin/lint.js` (and so `/complete`) crashed with `require is not defined in ES module scope` in projects whose `package.json` says `"type": "module"`. BuildKit now ships `.buildkit/package.json` with `{"type": "commonjs"}` next to the checker.
-- The first `update` of a 2.4–2.6 install (no manifest yet) listed every skill that changed since as a "no baseline" conflict and backed it up, even when you had never edited it. `update` now recognises an untracked file that matches a published release's copy (hashes in `lib/known-hashes.json`, refreshed with `npm run known-hashes` before each release) and updates it quietly; only files you changed are conflicts.
-- `lint` reports a `Progress.md` with no `## Current Phase` heading (one written before BuildKit's template) as a WARN instead of a FAIL, so it no longer blocks `/complete`. A Current Phase that names no plan phase still fails.
-
-## 2.7.0-rc.1 — Enforceable Gates and Small Fixes (release candidate)
-
-Release candidate on the npm `next` tag: `npx vikers-buildkit@next update`. `npx vikers-buildkit` still installs 2.6.0 until 2.7.0 is released.
+## 2.7.0 — Enforceable Gates and Small Fixes
 
 ### Changed
 - `/implement` and `/complete` handle a `Type: fix` spec (customized copies of either show as `update` conflicts). `/complete`'s description now says `/audit` is needed only when it was run, matching its rules; a fix that targets a BLOCKING finding still needs `/audit` to close it.
@@ -54,11 +34,20 @@ Release candidate on the npm `next` tag: `npx vikers-buildkit@next update`. `npx
 - `/feature`, `/check`, `/audit` and `/complete` run only when you ask for them. Claude Code enforces this with `disable-model-invocation`; other agents get the same instruction in the skill text.
 - Shorter `spec-driven-dev`, `ideate`, `tools-check` and `spec-init` descriptions (each under 400 characters), so they cost less to keep loaded and trigger less often by mistake.
 
+### Fixed during the release candidates
+Found by running 2.7.0-rc.1 and rc.2 on a real project; none of these affected 2.6.0.
+- `node .buildkit/bin/lint.js` (and so `/complete`) crashed with `require is not defined in ES module scope` in projects whose `package.json` says `"type": "module"`. BuildKit now ships `.buildkit/package.json` with `{"type": "commonjs"}` next to the checker.
+- The first `update` of a 2.4–2.6 install (no manifest yet) listed every skill that changed since as a "no baseline" conflict and backed it up, even when you had never edited it. `update` now recognises an untracked file that matches a published release's copy (hashes in `lib/known-hashes.json`, refreshed with `npm run known-hashes` before each release) and updates it quietly; only files you changed are conflicts.
+- `lint` reports a `Progress.md` with no `## Current Phase` heading (one written before BuildKit's template) as a WARN instead of a FAIL, so it no longer blocks `/complete`. A Current Phase that names no plan phase still fails.
+- `/implement` records your approval: once you approve a spec that is awaiting approval, it sets `.buildkit/state.md`'s Lifecycle Gate to `approved (by the user, <date>)` before writing code. Previously no skill changed it.
+- A `/fix` is logged once. `/implement` adds its line to `Progress.md`, and `/complete` no longer adds a second one. If `Progress.md` has no Session Log section, `/implement` uses the one log or history section the file already has, or skips the line and says so; it never creates a new section.
+- `/complete` writes its completion record to `.buildkit/history/<slug>/completion.md`: the date, who approved the spec, the `/check` result, the lint result, the findings touched and any drift. It then sets `state.md` to no current feature and records the last completed one.
+
 ### Upgrading
 - Node.js 22 or newer is required.
-- Run `npx vikers-buildkit@next update` (`npx vikers-buildkit update` once 2.7.0 is out). Your specs, `.buildkit/state.md`, features and history are untouched.
-- The first update from 2.4–2.6 has no manifest to compare against. From rc.2 on, it updates any file that still matches a published BuildKit release and only backs up files you changed, to `.buildkit/backups/<timestamp>/`, before replacing them; re-apply your customizations from that backup. (rc.1 backed up every file that differed.) From then on, `update` stops on customized files and lists them as conflicts; run `update --dry-run` first, and `--force` to back them up and take the new version.
-- The update adds the `fix` and `investigate` skills and the lint checker in `.buildkit/bin/` and `.buildkit/lib/`. Until you update, `doctor` reports the checker as missing.
+- Run `npx vikers-buildkit update`. Your specs, `.buildkit/state.md`, features and history are untouched.
+- The first update from 2.4–2.6 has no manifest to compare against. It updates any file that still matches a published BuildKit release and only backs up files you changed, to `.buildkit/backups/<timestamp>/`, before replacing them; re-apply your customizations from that backup. From then on, `update` stops on customized files and lists them as conflicts; run `update --dry-run` first, and `--force` to back them up and take the new version.
+- The update adds the `fix` and `investigate` skills and the lint checker in `.buildkit/bin/`, `.buildkit/lib/` and `.buildkit/package.json`. Until you update, `doctor` reports the checker as missing.
 - Gates are stricter: `/complete` now runs `node .buildkit/bin/lint.js` and refuses on any lint failure (spec placeholders, a Current Phase missing from the plan, an open or unverified BLOCKING finding). If your CI runs `npx vikers-buildkit lint --strict`, it now fails while a BLOCKING finding is open.
 - Older audit reports stay where they are; the next `/audit` carries their BLOCKING and HIGH findings into `.buildkit/findings.md`.
 
