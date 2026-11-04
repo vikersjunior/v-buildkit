@@ -89,3 +89,15 @@ test('update adds /fix and /investigate to an older install, and lint accepts a 
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+// Gaps found running the fix loop on a real project (2.7.0-rc.2).
+test('the approval is recorded, logged once, and the completion record has a place', () => {
+  const implement = read('implement');
+  assert.match(implement, /set `## Lifecycle Gate` in `state\.md` to `approved \(by the user, <date>\)`/);
+  assert.match(implement, /if `Progress\.md` has no Session Log section, add the line to the one section it already uses/);
+  for (const name of ['fix', 'feature']) assert.match(read(name), /`\/implement` records it in `state\.md`/, name);
+  const complete = read('complete');
+  assert.match(complete, /`\.buildkit\/history\/<slug>\/completion\.md`/);
+  assert.match(complete, /`\/implement` already logged it: add no second log line/);
+  assert.match(complete, /Last Completed Feature `<slug> \(<date>\)`/);
+});

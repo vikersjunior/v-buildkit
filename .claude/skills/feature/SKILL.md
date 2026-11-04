@@ -36,6 +36,6 @@ Spec files are resolved from the configured documentation root in `.buildkit/con
 8. Decide open questions. A material decision the docs do not settle (public API or contract, security or permissions, persisted data shape, external integration) goes under `## Open questions`; do not guess it. For a reversible internal detail, pick one, record it under Risks / Assumptions, and continue. Write `- None` when nothing is open.
 9. Create `.buildkit/features/<slug>/spec.md` and `acceptance.md`, each written once.
 10. Set `.buildkit/state.md` to `Lifecycle Gate: awaiting approval` and record the current feature.
-11. STOP. Do not write application code. Report any open questions first, then wait for explicit approval.
+11. STOP. Do not write application code. Report any open questions first, then wait for explicit approval (`/implement` records it in `state.md`).
 
 `spec.md` must reference the root source-of-truth files rather than duplicating project-wide technical rules. Acceptance criteria use stable IDs such as `AC-01`.

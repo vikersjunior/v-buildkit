@@ -1,5 +1,12 @@
 # Viker's BuildKit Changelog
 
+## Unreleased
+
+### Fixed
+- `/implement` records your approval: once you approve a spec that is awaiting approval, it sets `.buildkit/state.md`'s Lifecycle Gate to `approved (by the user, <date>)` before writing code. Previously no skill changed it.
+- A `/fix` is logged once. `/implement` adds its line to `Progress.md`, and `/complete` no longer adds a second one. If `Progress.md` has no Session Log section, `/implement` uses the one log or history section the file already has, or skips the line and says so; it never creates a new section.
+- `/complete` writes its completion record to `.buildkit/history/<slug>/completion.md`: the date, who approved the spec, the `/check` result, the lint result, the findings touched and any drift. It then sets `state.md` to no current feature and records the last completed one.
+
 ## 2.7.0-rc.2 — Release candidate fixes
 
 Release candidate on the npm `next` tag: `npx vikers-buildkit@next update`. Fixes from testing rc.1 on a real project; everything in rc.1 below still applies.
