@@ -1,0 +1,63 @@
+{
+  "versions": [
+    "2.4.0",
+    "2.5.0",
+    "2.6.0"
+  ],
+  "files": {
+    ".claude/skills/audit/SKILL.md": [
+      "773ff354a60201140309af7604e09c9b2e0aeb6fa50e58cac29aa85941f5db51"
+    ],
+    ".claude/skills/check/SKILL.md": [
+      "4cad7e7071621abdc10ddd9a69f6624679e1c01ab314c6ae160d7fc05cfbc11b"
+    ],
+    ".claude/skills/complete/SKILL.md": [
+      "75ee224f332353a2bc54cd15b6d6669cf2dcb528ffdfec93ab6a3c23134598f4",
+      "bab697b9a3a948eecd2ea0022b13d833c4902a84650984410d6e1d7c036cd903"
+    ],
+    ".claude/skills/distill-skill/SKILL.md": [
+      "b094bcae632069509fbba7de06a42a77648dc27be11bba4b1ed7f4283c927807",
+      "ba1d16011d51edd61c35c7346584818f72ba21fee70b248b2aa812ac5f57b3c8",
+      "dbe228cda018501eee0ce6e4adc05f4a65fefca89526e6923629d5aaef8a3004"
+    ],
+    ".claude/skills/feature/SKILL.md": [
+      "3dd19558b8a2081f53b0fb062c728d81e0f5d93f6c136ee864c2de36067d5205",
+      "a345c3198fe1864badc48655ebf23ea50b6225c27d36211472f6dfa81c705d40"
+    ],
+    ".claude/skills/ideate/SKILL.md": [
+      "b134f953e68b2571966049105525c4999312b095e26433cd280eb54d20d02086"
+    ],
+    ".claude/skills/implement/SKILL.md": [
+      "3b2a46841117c428d54f42a248d30dbfb143a8258c9e1bc55b560f62fa84488d",
+      "57bcb32aad25e293edda885e2878c67459e2be21e1d0fb07bca3e59ce45d2070",
+      "80f7ea39cb6c878b69ed1555bbf1bc9b6e81f39102c9435dc2dc7506b82a6f90"
+    ],
+    ".claude/skills/progress/SKILL.md": [
+      "3afa3fa1db06f3e5d577f260ac515cc96b3a4023224533ac522ac23ce03dd674",
+      "a42267f52fd63e5e5f38a175c0db15b1222031a6031438669308bc0f38980633"
+    ],
+    ".claude/skills/spec-driven-dev/SKILL.md": [
+      "17d22140c0e7344ff835659d19b5e3e8350f32d718cf8628577ed811123827bd",
+      "34c202dde97072180caa51026b890b19015cbf20ea267a84a10b19e13227d7a5",
+      "9ac746aa46d248b9b8b00bcc521c77a46dfd4169528185a88a78c440f9560cf5"
+    ],
+    ".claude/skills/spec-driven-dev/references/progress-template.md": [
+      "47ddb29c4756e942a8fb44392b402da28461dced84502332c3ae9b24cbff1571"
+    ],
+    ".claude/skills/spec-driven-dev/references/rules-template.md": [
+      "4d0d8a1bcdb5d6ff63afb7453f382db810cb7e0157787c0ba74084d6ec94832f"
+    ],
+    ".claude/skills/spec-init/SKILL.md": [
+      "ecc2eabf18697819bb86c81cf77e14afda6f9964bc23be95dfe4f4a35967f88e"
+    ],
+    ".claude/skills/spec-review/SKILL.md": [
+      "924fe02bbe86301ae88cd55c9f3b98584bd62d2d4ff03b3843fc1d096813f593",
+      "cbd45fbe08aeed5a0764ca96f0dba4f2048de7fabae2a8b44f33bfa8e0400306",
+      "e5d26974d2f06d73ac3d355c0bf33c40b973cec46fdcd48c09b32bfd89651425"
+    ],
+    ".claude/skills/tools-check/SKILL.md": [
+      "47e849f2f386ca9d610ec683ea61b8d5b1e20521302f6cc117644f15497f250c",
+      "642c7fddc19b1a4e451c9e49732a00bd32bae4f706679a6582e0a64b0cd65654"
+    ]
+  }
+}

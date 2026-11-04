@@ -156,7 +156,10 @@ test('lint checks Current Phase against plan headings', () => {
     assert.equal(run('lint', tmp).status, 0, 'bare name matches a "Phase 1: Auth" heading');
 
     writeSpecs(tmp, { 'Progress.md': '# Shop — Progress\n\n## Completed\n- x\n' });
-    assert.match(run('lint', tmp).stdout, /\[FAIL\] Progress\.md: no "## Current Phase" heading/);
+    // A Progress.md from before BuildKit's template warns instead of blocking /complete.
+    const noHeading = run('lint', tmp);
+    assert.match(noHeading.stdout, /\[WARN\] Progress\.md: no "## Current Phase" heading; Current Phase not checked/);
+    assert.equal(noHeading.status, 0, noHeading.stdout);
 
     writeSpecs(tmp, { 'Progress.md': '# Shop — Progress\n\n## Current Phase\n[Exact phase name from Implementation_plan.md — not a paraphrase]\n' });
     const placeholder = run('lint', tmp);

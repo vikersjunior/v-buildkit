@@ -372,3 +372,36 @@ test('update --force keeps backups out of git and keeps only the newest five', (
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+test('lib/known-hashes.json lists only older hashes of files the package still ships', () => {
+  const { hashFile } = require('../lib/hash');
+  const { versions, files } = require('../lib/known-hashes.json');
+  assert.ok(Array.isArray(versions) && versions.length > 0, 'records which releases it covers');
+  for (const [rel, hashes] of Object.entries(files)) {
+    const file = path.join(__dirname, '..', ...rel.split('/'));
+    assert.ok(fs.existsSync(file), `${rel} is still shipped`);
+    for (const h of hashes) assert.match(h, /^[0-9a-f]{64}$/);
+    assert.ok(!hashes.includes(hashFile(file)), `${rel}: the current hash is not an "older" one`);
+  }
+});
+
+test('update on a pre-manifest install treats a published older skill as unmodified', (t) => {
+  // The 2.6.0 copy of a skill that changed since, read from the release tag (needs tags in the checkout).
+  const rel = '.claude/skills/implement/SKILL.md';
+  const old = spawnSync('git', ['show', `v2.6.0:${rel}`], { cwd: path.join(__dirname, '..'), encoding: 'latin1' });
+  if (old.status !== 0) return t.skip('release tag v2.6.0 not available in this checkout');
+  const tmp = installed();
+  try {
+    fs.rmSync(path.join(tmp, '.buildkit', 'manifest.json'));
+    fs.writeFileSync(path.join(tmp, rel), old.stdout, 'latin1');
+    fs.appendFileSync(path.join(tmp, '.claude', 'skills', 'audit', 'SKILL.md'), '\nmy note\n');
+    const res = run('update', tmp, '--dry-run');
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    const section = name => (res.stdout.split(/\r?\n(?=\w+ \(\d+\):)/).find(s => s.startsWith(`${name} (`)) || '');
+    assert.match(section('Update'), /\.claude\/skills\/implement\/SKILL\.md/);
+    assert.doesNotMatch(section('Conflict'), /implement\/SKILL\.md/);
+    assert.match(section('Conflict'), /\.claude\/skills\/audit\/SKILL\.md — no baseline/);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});

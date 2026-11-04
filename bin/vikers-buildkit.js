@@ -16,6 +16,9 @@ const {
   ConfigStatus
 } = require('../lib/config');
 const { runLint } = require('../lib/lint');
+const { hashFile } = require('../lib/hash');
+// Hashes managed files had in earlier releases (scripts/known-hashes.js), for installs without a manifest.
+const KNOWN_HASHES = require('../lib/known-hashes.json').files;
 
 const PACKAGE_ROOT = path.resolve(__dirname, '..');
 const WORKFLOW_SOURCE = path.join(PACKAGE_ROOT, '.claude', 'skills');
@@ -24,7 +27,13 @@ const TEMPLATE_SOURCE = path.join(PACKAGE_ROOT, 'templates');
 
 // The lint checker ships next to the skills (same layout as the package), so /complete runs
 // `node .buildkit/bin/lint.js` from the release that wrote its instructions, with no npx.
-const VENDORED_LINT = ['bin/lint.js', 'lib/lint.js', 'lib/config.js'];
+// .buildkit/package.json marks it CommonJS, so it still runs in a project with "type": "module".
+const VENDORED_LINT = {
+  'bin/lint.js': 'bin/lint.js',
+  'lib/lint.js': 'lib/lint.js',
+  'lib/config.js': 'lib/config.js',
+  'package.json': 'lib/buildkit-package.json'
+};
 
 const WORKFLOW_SKILLS = [
   'spec-driven-dev', 'ideate', 'spec-init', 'spec-review', 'feature',
@@ -203,7 +212,7 @@ function copyDir(source, dest) {
 
 function copyVendoredLint(target) {
   // Atomic rename replaces a pre-planted link at the destination instead of writing through it.
-  for (const rel of VENDORED_LINT) copyFileAtomic(path.join(PACKAGE_ROOT, ...rel.split('/')), path.join(target, '.buildkit', ...rel.split('/')));
+  for (const [rel, source] of Object.entries(VENDORED_LINT)) copyFileAtomic(path.join(PACKAGE_ROOT, ...source.split('/')), path.join(target, '.buildkit', ...rel.split('/')));
 }
 
 function copyFile(source, dest) {
@@ -213,14 +222,6 @@ function copyFile(source, dest) {
 
 const MANIFEST_PATH = path.join('.buildkit', 'manifest.json');
 const BACKUPS_KEPT = 5;
-
-// Text files hash with CRLF folded to LF, so a git checkout that converts line endings doesn't
-// make every managed file look edited. Files with a NUL byte (binary) are hashed as-is.
-function hashFile(file) {
-  let data = fs.readFileSync(file);
-  if (!data.subarray(0, 8000).includes(0)) data = Buffer.from(data.toString('latin1').replace(/\r\n/g, '\n'), 'latin1');
-  return crypto.createHash('sha256').update(data).digest('hex');
-}
 
 // A random temp name, created exclusively, so a pre-planted file or link at that path can't redirect the write.
 function tempPath(dest) {
@@ -280,7 +281,7 @@ function managedSources(target, agents) {
   };
   addTree(WORKFLOW_SOURCE, roots[0]);
   addTree(LIBRARY_SOURCE, roots[1]);
-  for (const rel of VENDORED_LINT) files.set(`.buildkit/${rel}`, path.join(PACKAGE_ROOT, ...rel.split('/')));
+  for (const [rel, source] of Object.entries(VENDORED_LINT)) files.set(`.buildkit/${rel}`, path.join(PACKAGE_ROOT, ...source.split('/')));
   for (const agent of agents) {
     const cfg = AGENTS[agent];
     // Linked agent dirs resolve into .buildkit/workflow-skills, which is already tracked.
@@ -355,8 +356,11 @@ function planUpdate(target, { files: sources, roots }, manifest) {
     if (!stat.isFile()) { plan.blocked.push({ rel, reason: 'not a regular file' }); continue; }
     const current = hashFile(dest);
     const reason = recorded[rel] ? 'modified locally' : manifest ? 'already exists and was not installed by BuildKit' : 'no baseline (installed before manifest tracking)';
+    // On an install from before manifest tracking, a file identical to a published release's copy is
+    // BuildKit's own, unmodified. With a manifest, an unrecorded file stays a conflict.
+    const knownOld = !manifest && (KNOWN_HASHES[path.relative(PACKAGE_ROOT, source).split(path.sep).join('/')] || []).includes(current);
     if (current === hashFile(source)) plan.unchanged.push({ rel });
-    else if (recorded[rel] === current) plan.update.push({ rel, source });
+    else if (recorded[rel] === current || knownOld) plan.update.push({ rel, source });
     else plan.conflict.push({ rel, source, reason });
   }
   // Only prune recorded files under roots this update still manages.
@@ -883,7 +887,7 @@ function doctor(options) {
 
   const libraryRoot = path.join(buildkitDir, 'skills-library');
   check(fs.existsSync(libraryRoot), '.buildkit/skills-library/ exists', '.buildkit/skills-library/ missing');
-  const missingLint = VENDORED_LINT.filter(rel => !fs.existsSync(path.join(buildkitDir, ...rel.split('/'))));
+  const missingLint = Object.keys(VENDORED_LINT).filter(rel => !fs.existsSync(path.join(buildkitDir, ...rel.split('/'))));
   check(missingLint.length === 0, '.buildkit/bin/lint.js checker present', `Lint checker files missing: ${missingLint.map(rel => `.buildkit/${rel}`).join(', ')}`);
 
   const configured = getConfiguredAgents(target);
