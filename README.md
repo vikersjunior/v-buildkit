@@ -338,6 +338,7 @@ npx vikers-buildkit lint
 | No spec files yet (before `/spec-init`) | WARN |
 | A template placeholder such as `[Project Name]` or `[TBD]` is left in a spec | FAIL |
 | `Progress.md`'s Current Phase is not a phase heading in `Implementation_plan.md` | FAIL |
+| `Progress.md` has no `## Current Phase` heading (written before BuildKit's template) | WARN |
 | A `**Assumption:**` tag is still in a spec | WARN |
 | `.buildkit/state.md` names a feature with no feature or history folder | WARN |
 | A `BLOCKING` finding in `.buildkit/findings.md` is `open` or `fixed` | FAIL |

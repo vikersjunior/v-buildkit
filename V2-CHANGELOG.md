@@ -1,5 +1,12 @@
 # Viker's BuildKit Changelog
 
+## Unreleased
+
+### Fixed
+- `node .buildkit/bin/lint.js` (and so `/complete`) crashed with `require is not defined in ES module scope` in projects whose `package.json` says `"type": "module"`. BuildKit now ships `.buildkit/package.json` with `{"type": "commonjs"}` next to the checker.
+- The first `update` of a 2.4–2.6 install (no manifest yet) listed every skill that changed since as a "no baseline" conflict and backed it up, even when you had never edited it. `update` now recognises an untracked file that matches a published release's copy (hashes in `lib/known-hashes.json`, refreshed with `npm run known-hashes` before each release) and updates it quietly; only files you changed are conflicts.
+- `lint` reports a `Progress.md` with no `## Current Phase` heading (one written before BuildKit's template) as a WARN instead of a FAIL, so it no longer blocks `/complete`. A Current Phase that names no plan phase still fails.
+
 ## 2.7.0-rc.1 — Enforceable Gates and Small Fixes (release candidate)
 
 Release candidate on the npm `next` tag: `npx vikers-buildkit@next update`. `npx vikers-buildkit` still installs 2.6.0 until 2.7.0 is released.

@@ -190,9 +190,24 @@ test('gate inputs fail closed when they exist but cannot be read', (t) => {
 
 test('install vendors the lint checker byte-for-byte and tracks it in the manifest', () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(tmp, '.buildkit', 'manifest.json'), 'utf8'));
-  for (const rel of ['bin/lint.js', 'lib/lint.js', 'lib/config.js']) {
-    assert.ok(fs.readFileSync(path.join(tmp, '.buildkit', rel)).equals(fs.readFileSync(path.join(ROOT, rel))), rel);
+  const vendored = { 'bin/lint.js': 'bin/lint.js', 'lib/lint.js': 'lib/lint.js', 'lib/config.js': 'lib/config.js', 'package.json': 'lib/buildkit-package.json' };
+  for (const [rel, source] of Object.entries(vendored)) {
+    assert.ok(fs.readFileSync(path.join(tmp, '.buildkit', rel)).equals(fs.readFileSync(path.join(ROOT, source))), rel);
     assert.ok(manifest.files[`.buildkit/${rel}`], `${rel} in manifest`);
+  }
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(tmp, '.buildkit', 'package.json'), 'utf8')), { type: 'commonjs' });
+});
+
+test('the vendored checker runs in a project whose package.json says "type": "module"', () => {
+  const esm = fs.mkdtempSync(path.join(os.tmpdir(), 'buildkit-test-esm-'));
+  try {
+    assert.equal(run('install', esm, '--agent', 'claude', '--no-detect', '--skip-capabilities').status, 0);
+    fs.writeFileSync(path.join(esm, 'package.json'), JSON.stringify({ name: 'esm-app', type: 'module' }));
+    const res = spawnSync(process.execPath, [path.join(esm, '.buildkit', 'bin', 'lint.js')], { encoding: 'utf8' });
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    assert.match(res.stdout, /No findings ledger yet/);
+  } finally {
+    fs.rmSync(esm, { recursive: true, force: true });
   }
 });
 
