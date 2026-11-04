@@ -10,7 +10,10 @@ const { spawnSync } = require('node:child_process');
 const ROOT = path.resolve(__dirname, '..');
 const SKILLS = path.join(ROOT, '.claude', 'skills');
 const CLI = path.join(ROOT, 'bin', 'vikers-buildkit.js');
-const GATES = ['feature', 'check', 'audit', 'complete'];
+const GATES = ['feature', 'check', 'audit', 'complete', 'fix', 'investigate'];
+// Built-in or bundled command names in agents BuildKit installs into (Claude Code bundles /debug, for one).
+// A skill folder with one of these names would shadow or be shadowed by the agent's own command.
+const RESERVED_NAMES = ['debug', 'review', 'code-review', 'verify', 'run', 'simplify', 'doctor', 'status', 'batch', 'loop', 'init', 'help', 'compact', 'config'];
 const GATE_LINE = 'Run only when the user explicitly asks for this command';
 
 function readSkill(dir) {
@@ -40,6 +43,10 @@ test('every workflow skill has valid, short frontmatter', () => {
     assert.ok(!desc.includes(': ') && !desc.includes(' #') && !desc.endsWith(':'), `${name}: description needs quoting (contains ": " or " #")`);
     assert.ok(body.includes('Context reuse:'), `${name}: missing the Context reuse line`);
   }
+});
+
+test('no skill uses a name agents reserve for their own commands', () => {
+  for (const name of skills) assert.ok(!RESERVED_NAMES.includes(name), `${name}: reserved by an agent's built-in command; pick another name`);
 });
 
 test('only the lifecycle gates are explicit-only', () => {

@@ -28,7 +28,7 @@ const VENDORED_LINT = ['bin/lint.js', 'lib/lint.js', 'lib/config.js'];
 
 const WORKFLOW_SKILLS = [
   'spec-driven-dev', 'ideate', 'spec-init', 'spec-review', 'feature',
-  'implement', 'check', 'audit', 'complete', 'progress', 'tools-check', 'distill-skill'
+  'implement', 'check', 'audit', 'complete', 'progress', 'tools-check', 'distill-skill', 'fix', 'investigate'
 ];
 
 const AGENTS = {
@@ -709,6 +709,7 @@ function install(options) {
   console.log(`Agents: ${agents.join(', ')}`);
   console.log(`Documentation root: ${docsDirRel}/`);
   console.log('Workflow: ideate -> spec-init -> approval -> feature -> approval -> implement -> check -> audit -> complete');
+  console.log('Small changes: investigate -> fix -> approval -> implement -> check -> complete');
   console.log(`BuildKit config: ${path.join('.buildkit', 'config.json')}`);
   console.log(options.link ? 'Single source of truth: .buildkit/workflow-skills/' : 'Workflow skills copied to each selected agent.');
 }
@@ -877,7 +878,7 @@ function doctor(options) {
         missingWorkflowSkills.push(skill);
       }
     }
-    check(missingWorkflowSkills.length === 0, 'All 12 workflow skills present in .buildkit/workflow-skills/', `Missing workflow skills: ${missingWorkflowSkills.join(', ')}`);
+    check(missingWorkflowSkills.length === 0, `All ${WORKFLOW_SKILLS.length} workflow skills present in .buildkit/workflow-skills/`, `Missing workflow skills: ${missingWorkflowSkills.join(', ')}`);
   }
 
   const libraryRoot = path.join(buildkitDir, 'skills-library');

@@ -1,6 +1,6 @@
 ---
 name: complete
-description: Use this to close a feature after /check and /audit have passed, including explicit /complete requests. Archives feature evidence and updates Progress.md.
+description: Use this to close a feature or fix after /check (and /audit, when run) has passed, including explicit /complete requests. Archives feature evidence and updates Progress.md.
 disable-model-invocation: true
 ---
 # Complete — Feature Closure Gate
@@ -16,7 +16,7 @@ Completion requires: approved feature spec, implementation, passing `/check`, no
 2a. Refuse completion if any other required gate is missing or failed.
 3. Move `.buildkit/features/<slug>/` to `.buildkit/history/<slug>/` preserving evidence.
 4. Add a completion record.
-5. Update `Progress.md` according to its ownership rules.
+5. Update `Progress.md` according to its ownership rules. For a `Type: fix` spec there is no plan task to move: add a one-line Session Log entry, and update Known Issues if the fix closes one.
 5a. Rotate `Progress.md` as its writing rules describe: collapse finished-phase tasks to one line per phase and keep only the latest 10 Session Log entries, appending everything removed to `.buildkit/history/progress-archive.md` under a dated heading. Never rotate "Decisions Made" or "Known Issues".
 6. Clear/update `.buildkit/state.md`.
 7. Flag any plan/spec drift for `/spec-review`.

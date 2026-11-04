@@ -4,6 +4,8 @@ This directory is the execution-state layer for Vikers BuildKit. The six root pr
 
 Lifecycle: `/feature → approval → /implement → /check → /audit → /complete`
 
+Small changes: `/investigate → /fix → approval → /implement → /check → /complete` (add `/audit` before `/complete` when the fix targets a `BLOCKING` finding)
+
 Directories:
 - `features/` active feature contracts and verification
 - `history/` completed feature evidence
