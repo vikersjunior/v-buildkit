@@ -1,6 +1,8 @@
 # Viker's BuildKit Changelog
 
-## Unreleased
+## 2.7.0-rc.3 — Fix-loop bookkeeping
+
+Release candidate on the npm `next` tag: `npx vikers-buildkit@next update`. Fixes from running the whole fix loop (`/fix` → `/implement` → `/check` → `/complete`) on a real project with rc.2; everything in rc.2 and rc.1 below still applies. Customized copies of `implement`, `complete`, `fix` or `feature` show as `update` conflicts.
 
 ### Fixed
 - `/implement` records your approval: once you approve a spec that is awaiting approval, it sets `.buildkit/state.md`'s Lifecycle Gate to `approved (by the user, <date>)` before writing code. Previously no skill changed it.

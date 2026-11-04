@@ -3,7 +3,8 @@
     "2.4.0",
     "2.5.0",
     "2.6.0",
-    "2.7.0-rc.1"
+    "2.7.0-rc.1",
+    "2.7.0-rc.2"
   ],
   "files": {
     ".claude/skills/audit/SKILL.md": [
@@ -13,6 +14,7 @@
       "4cad7e7071621abdc10ddd9a69f6624679e1c01ab314c6ae160d7fc05cfbc11b"
     ],
     ".claude/skills/complete/SKILL.md": [
+      "192bbdbeeb09ba10c09f95dda137b19af3d28c4c83eeaa2e9d8ab913d8714b28",
       "75ee224f332353a2bc54cd15b6d6669cf2dcb528ffdfec93ab6a3c23134598f4",
       "bab697b9a3a948eecd2ea0022b13d833c4902a84650984410d6e1d7c036cd903"
     ],
@@ -23,7 +25,11 @@
     ],
     ".claude/skills/feature/SKILL.md": [
       "3dd19558b8a2081f53b0fb062c728d81e0f5d93f6c136ee864c2de36067d5205",
+      "885b108769c8e279a3d41960e17054bc4e2157d8848f993f2deb7da549514bb9",
       "a345c3198fe1864badc48655ebf23ea50b6225c27d36211472f6dfa81c705d40"
+    ],
+    ".claude/skills/fix/SKILL.md": [
+      "0e6efa1a034b0b3005555c631e690e64ef06b1931d473c3acf7b17808d084ba6"
     ],
     ".claude/skills/ideate/SKILL.md": [
       "b134f953e68b2571966049105525c4999312b095e26433cd280eb54d20d02086"
@@ -31,7 +37,8 @@
     ".claude/skills/implement/SKILL.md": [
       "3b2a46841117c428d54f42a248d30dbfb143a8258c9e1bc55b560f62fa84488d",
       "57bcb32aad25e293edda885e2878c67459e2be21e1d0fb07bca3e59ce45d2070",
-      "80f7ea39cb6c878b69ed1555bbf1bc9b6e81f39102c9435dc2dc7506b82a6f90"
+      "80f7ea39cb6c878b69ed1555bbf1bc9b6e81f39102c9435dc2dc7506b82a6f90",
+      "e415a002dfa2e1b1122197fc281867020ad49ed531e159f948af40e3e65ae11a"
     ],
     ".claude/skills/progress/SKILL.md": [
       "3afa3fa1db06f3e5d577f260ac515cc96b3a4023224533ac522ac23ce03dd674",
