@@ -1,6 +1,8 @@
 # Viker's BuildKit Changelog
 
-## Unreleased
+## 2.7.0-rc.1 — Enforceable Gates and Small Fixes (release candidate)
+
+Release candidate on the npm `next` tag: `npx vikers-buildkit@next update`. `npx vikers-buildkit` still installs 2.6.0 until 2.7.0 is released.
 
 ### Changed
 - `/implement` and `/complete` handle a `Type: fix` spec (customized copies of either show as `update` conflicts). `/complete`'s description now says `/audit` is needed only when it was run, matching its rules; a fix that targets a BLOCKING finding still needs `/audit` to close it.
@@ -33,6 +35,14 @@
 - Every workflow skill reuses files already read in the session instead of rereading them.
 - `/feature`, `/check`, `/audit` and `/complete` run only when you ask for them. Claude Code enforces this with `disable-model-invocation`; other agents get the same instruction in the skill text.
 - Shorter `spec-driven-dev`, `ideate`, `tools-check` and `spec-init` descriptions (each under 400 characters), so they cost less to keep loaded and trigger less often by mistake.
+
+### Upgrading
+- Node.js 22 or newer is required.
+- Run `npx vikers-buildkit@next update` (`npx vikers-buildkit update` once 2.7.0 is out). Your specs, `.buildkit/state.md`, features and history are untouched.
+- The first update from 2.6.0 has no manifest to compare against, so it backs up every BuildKit file that differs from the new release to `.buildkit/backups/<timestamp>/` and replaces it. Re-apply any skill customizations from that backup. From then on, `update` stops on customized files and lists them as conflicts; run `update --dry-run` first, and `--force` to back them up and take the new version.
+- The update adds the `fix` and `investigate` skills and the lint checker in `.buildkit/bin/` and `.buildkit/lib/`. Until you update, `doctor` reports the checker as missing.
+- Gates are stricter: `/complete` now runs `node .buildkit/bin/lint.js` and refuses on any lint failure (spec placeholders, a Current Phase missing from the plan, an open or unverified BLOCKING finding). If your CI runs `npx vikers-buildkit lint --strict`, it now fails while a BLOCKING finding is open.
+- Older audit reports stay where they are; the next `/audit` carries their BLOCKING and HIGH findings into `.buildkit/findings.md`.
 
 ## 2.6.0 — Token Economy
 
