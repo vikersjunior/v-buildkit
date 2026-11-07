@@ -14,6 +14,7 @@ Only these two critics are supported. Each was verified read-only on 2026-11-07.
 - **Timeouts:** Codex runs with your shell's timeout at 15 minutes; agy gets `--print-timeout 12m`.
 - **Schema:** `.buildkit/workflow-skills/crosscheck/references/finding.schema.json` (below, as `<schema>`).
 - **Prompts:** feed prompt files on stdin. Never paste them into an argument; Windows breaks quoting and length.
+- **Windows PowerShell 5.1:** it reads files as ANSI and pipes text to native programs as ASCII, turning every non-ASCII character into `?`. Set `$OutputEncoding` to UTF-8 and read with `-Encoding UTF8`, as shown below.
 
 ## Codex
 
@@ -24,7 +25,7 @@ cd <tmp>/work && codex exec --ephemeral --ignore-user-config --skip-git-repo-che
 
 PowerShell:
 ```powershell
-Set-Location <tmp>\work; Get-Content <tmp>\inputs\A.txt -Raw | codex exec --ephemeral --ignore-user-config --skip-git-repo-check -s read-only -c model_reasoning_effort="high" --output-schema <schema> -o <tmp>\out\codex-A.json -
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false); Set-Location <tmp>\work; Get-Content <tmp>\inputs\A.txt -Raw -Encoding UTF8 | codex exec --ephemeral --ignore-user-config --skip-git-repo-check -s read-only -c model_reasoning_effort="high" --output-schema <schema> -o <tmp>\out\codex-A.json -
 ```
 
 The model is the CLI's default under `--ignore-user-config`, and the startup line shows it (`model: …`). Record it. If it's a small or mini tier, re-run with `-c model=<flagship>`. "Selected model is at capacity" exits 0 but writes no `-o` file: treat a missing or empty output file as a failed leg.
@@ -43,7 +44,7 @@ bash:
 cd <tmp>/work && agy --sandbox --mode plan --settings <tmp>/inputs/agy-settings.json --model <model> --json-schema <schema> --print-timeout 12m --input-format stream-json --output-format stream-json -p= < <tmp>/inputs/A.ndjson > <tmp>/out/agy-A.ndjson
 ```
 
-PowerShell: use the same flags, with `Get-Content <tmp>\inputs\A.ndjson -Raw | agy … -p= | Out-File -Encoding utf8 <tmp>\out\agy-A.ndjson`.
+PowerShell: use the same flags, with `$OutputEncoding = [System.Text.UTF8Encoding]::new($false); Get-Content <tmp>\inputs\A.ndjson -Raw -Encoding UTF8 | agy … -p= | Out-File -Encoding utf8 <tmp>\out\agy-A.ndjson`.
 
 - **`-p=`:** keep the `=`. A bare `-p` swallows the next flag as its prompt.
 - **The prompt:** opens with a "you have no tools" note (`--format agy` adds it). Without it, agy tries a shell command, is denied, and ends with no output.

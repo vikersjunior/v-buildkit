@@ -83,3 +83,10 @@ test('ledger entries keep critic text behind host-written prefixes, and lint par
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+test('redaction never eats the rest of an ordinary line, and removes a whole PEM block', () => {
+  const code = "const re = /-----BEGIN [^" + String.fromCharCode(92) + "n]*/g; // stays readable";
+  assert.equal(redact(code).text, code, 'source code that mentions the pattern is left intact');
+  const pem = 'a\n-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA\n-----END RSA PRIVATE KEY-----\nb';
+  assert.equal(redact(pem).text, 'a\n[REDACTED]\nb');
+});

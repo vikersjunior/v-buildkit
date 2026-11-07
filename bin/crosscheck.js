@@ -110,7 +110,7 @@ function prompt(root, kind, opts) {
 
 // Reads a critic's output: a JSON file (codex -o), or agy stream-json (last result event).
 function readLegFile(file) {
-  const text = fs.readFileSync(file, 'utf8').replace(/^﻿/, '');
+  const text = fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, '');
   try { return JSON.parse(text); } catch {}
   const results = text.split(/\r?\n/).filter(l => l.startsWith('{"event":"result"'));
   if (!results.length) throw new Error(`${file}: no JSON and no stream-json result event`);

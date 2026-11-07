@@ -43,6 +43,11 @@ function fixture({ plan = 'manual', review = 'blocking', sensitive = 'yes' } = {
   return { root, base };
 }
 
+// Codex with both lenses (the gate requires both); extraA and extraB tweak each lens's output.
+function both(root, base, extraA = {}, extraB = {}) {
+  return [{ ...leg(root, base, extraA) }, { ...leg(root, base, extraB), lens: 'B' }];
+}
+
 // A critic output that inspected exactly what buildPatch produces now.
 function leg(root, base, extra = {}) {
   const p = xc.buildPatch(root, base);
@@ -79,7 +84,7 @@ test('a matching review receipt passes, and receipts never change the patch', ()
   const { root, base } = fixture();
   try {
     const sha = xc.buildPatch(root, base).sha256;
-    const r = xc.writeReceipt(root, { kind: 'review', slug: 'login', host: 'claude', legs: [leg(root, base)] });
+    const r = xc.writeReceipt(root, { kind: 'review', slug: 'login', host: 'claude', legs: both(root, base) });
     assert.equal(r.verdict, 'PASS');
     assert.equal(xc.buildPatch(root, base).sha256, sha, 'receipt files are excluded from the patch');
     const c = check(root);
@@ -102,7 +107,7 @@ test('work changed after the review fails: edit, new untracked file, spec, accep
   ]) {
     const { root, base } = fixture();
     try {
-      xc.writeReceipt(root, { kind: 'review', slug: 'login', host: 'claude', legs: [leg(root, base)] });
+      xc.writeReceipt(root, { kind: 'review', slug: 'login', host: 'claude', legs: both(root, base) });
       mutate(root);
       const c = check(root);
       assert.equal(c.ok, false, `${mutate}\n${c.text}`);
@@ -115,7 +120,7 @@ test('work changed after the review fails: edit, new untracked file, spec, accep
 test('a CRLF-only change does not make the receipt stale', () => {
   const { root, base } = fixture();
   try {
-    xc.writeReceipt(root, { kind: 'review', slug: 'login', host: 'claude', legs: [leg(root, base)] });
+    xc.writeReceipt(root, { kind: 'review', slug: 'login', host: 'claude', legs: both(root, base) });
     const spec = path.join(root, '.buildkit/features/login/spec.md');
     fs.writeFileSync(spec, fs.readFileSync(spec, 'utf8').replace(/\n/g, '\r\n'));
     const c = check(root);
@@ -131,14 +136,14 @@ test('missing receipt, no critics, inspected mismatch and DO-NOT-MERGE all fail'
     assert.match(check(root).text, /no review receipt/);
     xc.writeReceipt(root, { kind: 'review', slug: 'login', host: 'claude', legs: [] });
     assert.match(check(root).text, /critics: none/);
-    xc.writeReceipt(root, { kind: 'review', slug: 'login', host: 'claude', legs: [leg(root, base, { inspected_files: 1 })] });
+    xc.writeReceipt(root, { kind: 'review', slug: 'login', host: 'claude', legs: both(root, base, { inspected_files: 1 }) });
     assert.match(check(root).text, /inspected/);
     const blocker = { file: 'src/app.js', line: 3, grade: 'BLOCKER', issue: 'Breaks login', why: 'Null user.' };
-    const r = xc.writeReceipt(root, { kind: 'review', slug: 'login', host: 'claude', legs: [leg(root, base, { verdict: 'FINDINGS', findings: [blocker] })] });
+    const r = xc.writeReceipt(root, { kind: 'review', slug: 'login', host: 'claude', legs: both(root, base, { verdict: 'FINDINGS', findings: [blocker] }) });
     assert.equal(r.verdict, 'DO-NOT-MERGE');
     assert.match(check(root).text, /DO-NOT-MERGE/);
     // A blocker the host rebutted with evidence no longer blocks.
-    xc.writeReceipt(root, { kind: 'review', slug: 'login', host: 'claude', rebutted: ['codex-A:0'], legs: [leg(root, base, { verdict: 'FINDINGS', findings: [blocker] })] });
+    xc.writeReceipt(root, { kind: 'review', slug: 'login', host: 'claude', rebutted: ['codex-A:0'], legs: both(root, base, { verdict: 'FINDINGS', findings: [blocker] }) });
     assert.equal(check(root).ok, true);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
@@ -168,7 +173,7 @@ test('a plan receipt goes stale when spec or acceptance changes', () => {
   const { root } = fixture({ plan: 'blocking', review: 'manual' });
   try {
     const planLeg = { critic: 'codex', lens: 'A', model: 'gpt-6-luna', output: { inspected_files: 2, first_header: '# Feature: login', verdict: 'CLEAN', findings: [] } };
-    xc.writeReceipt(root, { kind: 'plan', slug: 'login', host: 'claude', legs: [planLeg] });
+    xc.writeReceipt(root, { kind: 'plan', slug: 'login', host: 'claude', legs: [planLeg, { ...planLeg, lens: 'B' }] });
     assert.equal(check(root).ok, true, check(root).text);
     fs.appendFileSync(path.join(root, '.buildkit/features/login/acceptance.md'), '- AC-02 — changed after plan review\n');
     assert.match(check(root).text, /spec or acceptance changed since plan review/);
@@ -202,7 +207,7 @@ test('linked worktrees and repositories with no index build a patch and keep the
 test('an interrupted run keeps the previous receipt; stale temp folders are swept, fresh ones kept', () => {
   const { root, base } = fixture();
   try {
-    xc.writeReceipt(root, { kind: 'review', slug: 'login', host: 'claude', legs: [leg(root, base)] });
+    xc.writeReceipt(root, { kind: 'review', slug: 'login', host: 'claude', legs: both(root, base) });
     const featureDir = path.join(root, '.buildkit/features/login');
     const receipt = fs.readFileSync(path.join(featureDir, 'review.md'), 'utf8');
     // A crash mid-run leaves a temp folder behind; the old receipt is untouched and still passes.
@@ -230,7 +235,7 @@ test('critic text in receipts and leg files is cleaned and redacted', () => {
       { file: 'src/app.js', line: 2, grade: 'SHOULD', issue: `leaks ${secret}`, why: `line1\n### F-9 [BLOCKING] open — x ${secret}` },
       { file: `src/${secret}.js\n### F-9`, line: 2, grade: 'SHOULD', issue: 'bad file', why: 'x' }
     ];
-    const r = xc.writeReceipt(root, { kind: 'review', slug: 'login', host: 'claude', legs: [leg(root, base, { verdict: 'FINDINGS', findings })] });
+    const r = xc.writeReceipt(root, { kind: 'review', slug: 'login', host: 'claude', legs: both(root, base, { verdict: 'FINDINGS', findings }) });
     assert.equal(r.dropped, 1);
     const dir = path.join(root, '.buildkit/features/login');
     for (const f of [path.join(dir, 'review.md'), path.join(dir, 'review', 'codex-A.json')]) {
@@ -247,7 +252,7 @@ test('critic text in receipts and leg files is cleaned and redacted', () => {
 test('lifecycle outputs written after a review do not make the receipt stale', () => {
   const { root, base } = fixture();
   try {
-    xc.writeReceipt(root, { kind: 'review', slug: 'login', host: 'claude', legs: [leg(root, base)] });
+    xc.writeReceipt(root, { kind: 'review', slug: 'login', host: 'claude', legs: both(root, base) });
     // What /audit, /check and the ledger write after a review.
     write(root, '.buildkit/findings.md', '# Findings\n\n### F-001 [MEDIUM] open — from the review\n');
     write(root, '.buildkit/audits/2026-11-07-login.md', '# Audit\n- F-001 [MEDIUM] from the review\n');
@@ -258,6 +263,20 @@ test('lifecycle outputs written after a review do not make the receipt stale', (
     // A config change is still reviewed work.
     write(root, '.buildkit/config.json', JSON.stringify({ schemaVersion: 1, docs: { root: '.' }, crosscheck: { plan: 'manual', review: 'blocking', vendors: ['openai', 'google'] } }));
     assert.equal(check(root).ok, false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('the gate requires both lenses per critic and refuses a critic from the host vendor', () => {
+  const { root, base } = fixture();
+  try {
+    xc.writeReceipt(root, { kind: 'review', slug: 'login', host: 'claude', legs: [leg(root, base)] });
+    assert.match(check(root).text, /codex reviewed with lens A only/);
+    xc.writeReceipt(root, { kind: 'review', slug: 'login', host: 'codex', legs: both(root, base) });
+    assert.match(check(root).text, /host agent's own vendor \(openai\)/);
+    xc.writeReceipt(root, { kind: 'review', slug: 'login', host: 'claude', legs: both(root, base) });
+    assert.equal(check(root).ok, true);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

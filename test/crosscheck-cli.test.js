@@ -83,11 +83,12 @@ test('the vendored crosscheck tools work end to end in an installed project', ()
     const agyOut = path.join(tmp, '..', `xc-agy-${process.pid}.ndjson`);
     fs.writeFileSync(codexOut, JSON.stringify(leg));
     fs.writeFileSync(agyOut, `{"event":"init"}\n{"event":"result","result":{"status":"SUCCESS","response":${JSON.stringify(JSON.stringify(leg))}}}\n`);
-    const r = json(xc('receipt', 'review', '--host', 'claude', '--leg', `codex,A,gpt-6-luna,${codexOut}`, '--leg', `agy,B,gemini-3.8-flash-high,${agyOut}`));
+    // Both lenses are required; one output in each format.
+    const r = json(xc('receipt', 'review', '--host', 'claude', '--leg', `codex,A,gpt-6-luna,${codexOut}`, '--leg', `codex,B,gpt-6-luna,${agyOut}`));
     fs.rmSync(codexOut);
     fs.rmSync(agyOut);
     assert.equal(r.verdict, 'PASS');
-    assert.deepEqual(r.findings.map(f => f.key), ['codex-A:0', 'agy-B:0']);
+    assert.deepEqual(r.findings.map(f => f.key), ['codex-A:0', 'codex-B:0']);
 
     const added = json(xc('add-finding', '--leg', 'codex-A', '--index', '0', '--security'));
     assert.deepEqual(added, { id: 'F-001', severity: 'HIGH' });
