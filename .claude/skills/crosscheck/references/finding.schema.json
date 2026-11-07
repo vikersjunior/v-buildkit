@@ -1,0 +1,25 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["inspected_files", "first_header", "verdict", "findings"],
+  "properties": {
+    "inspected_files": { "type": "integer" },
+    "first_header": { "type": "string" },
+    "verdict": { "type": "string", "enum": ["CLEAN", "FINDINGS", "FILE-NOT-READ"] },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["file", "line", "grade", "issue", "why"],
+        "properties": {
+          "file": { "type": "string" },
+          "line": { "type": "integer" },
+          "grade": { "type": "string", "enum": ["BLOCKER", "SHOULD", "NIT"] },
+          "issue": { "type": "string" },
+          "why": { "type": "string" }
+        }
+      }
+    }
+  }
+}

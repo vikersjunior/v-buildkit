@@ -47,4 +47,8 @@ Classify findings as `BLOCKING`, `HIGH`, `MEDIUM`, `LOW`, or `NOTE`. Rate a cred
    Statuses: `open`, `fixed` (set by `/implement`), `closed` (only by `/audit`, with `- Verified in:`), `accepted` (only on the user's explicit instruction, with `- Reason:` and `- Accepted by: <name>`), `invalid` (with `- Reason:`). Always write `Where` and `Detail`. Never paste secrets, tokens or personal data; name the location instead. To re-rate an open finding, set it `invalid` with a Reason and add a new ID.
 4. Write the ledger first, then `.buildkit/audits/<timestamp>-<feature-slug>.md`. The report lists each finding as `F-NNN [SEVERITY] title` (every finding it re-checked or added) instead of restating it.
 
+## Independent review
+
+Run `node .buildkit/bin/crosscheck.js policy`. If it reports `review: true`, follow `.buildkit/workflow-skills/crosscheck/references/gates.md` as part of this audit. Its confirmed findings enter the ledger only through `crosscheck.js add-finding`.
+
 Audit is read-only for application code. Do not silently fix findings. Any `BLOCKING` finding that is `open` or `fixed` blocks `/complete`.

@@ -1,6 +1,8 @@
 # Feature: [Name]
 
 Status: Draft
+Base: <commit sha: output of `git rev-parse HEAD` when this spec is written>
+Sensitive: <yes|no>
 
 ## Traceability
 - PRD requirement:

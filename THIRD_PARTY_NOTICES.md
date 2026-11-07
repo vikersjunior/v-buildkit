@@ -23,3 +23,7 @@ Notes:
   `NOTICE.md` is kept in that folder and must stay with it (§4(d)). It credits ehmo's
   `platform-design-skills` (MIT, https://github.com/ehmo/platform-design-skills) as the
   source of `reference/ios.md` and `reference/android.md`.
+
+## Adapted method: model-crosscheck
+
+The `crosscheck` workflow skill (`.claude/skills/crosscheck/`) adapts the review method of model-crosscheck (https://github.com/SameerKhan/model-crosscheck, MIT, Copyright (c) 2026 Sameer Ahmed Khan). BuildKit's skill text and code are a rewrite, not a copy. The upstream license text is in `.claude/skills/crosscheck/references/NOTICE.md`.

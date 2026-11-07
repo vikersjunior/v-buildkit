@@ -34,8 +34,9 @@ Spec files are resolved from the configured documentation root in `.buildkit/con
    - scope bigger than one slice
    - anything built without a current need (`rules.md` rule 11)
 8. Decide open questions. A material decision the docs do not settle (public API or contract, security or permissions, persisted data shape, external integration) goes under `## Open questions`; do not guess it. For a reversible internal detail, pick one, record it under Risks / Assumptions, and continue. Write `- None` when nothing is open.
-9. Create `.buildkit/features/<slug>/spec.md` and `acceptance.md`, each written once.
+9. Create `.buildkit/features/<slug>/spec.md` and `acceptance.md`, each written once. Fill `Base:` with the output of `git rev-parse HEAD` and `Sensitive:` with yes when the work touches authentication, data handling, user input, payments, or external API or network calls; otherwise no.
 10. Set `.buildkit/state.md` to `Lifecycle Gate: awaiting approval` and record the current feature.
+10a. Run `node .buildkit/bin/crosscheck.js policy`. If it reports `plan: true`, follow `.buildkit/workflow-skills/crosscheck/references/gates.md` before stopping.
 11. STOP. Do not write application code. Report any open questions first, then wait for explicit approval (`/implement` records it in `state.md`).
 
 `spec.md` must reference the root source-of-truth files rather than duplicating project-wide technical rules. Acceptance criteria use stable IDs such as `AC-01`.
