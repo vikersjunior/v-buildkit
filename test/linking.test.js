@@ -85,3 +85,15 @@ test('Reinstalling or repairing over broken symlinks succeeds', () => {
     removeTmp(tmp);
   }
 });
+
+test('clean-stale-link-temp removes a folder holding a dangling link', () => {
+  const { clean } = require('../scripts/clean-stale-link-temp.js');
+  const tmp = makeTmpDir();
+  const target = path.join(tmp, '.buildkit', 'workflow-skills');
+  fs.mkdirSync(target, { recursive: true });
+  fs.mkdirSync(path.join(tmp, '.claude'));
+  fs.symlinkSync(target, path.join(tmp, '.claude', 'skills'), 'junction');
+  fs.rmSync(target, { recursive: true });
+  clean(tmp);
+  assert.ok(!fs.existsSync(tmp));
+});
