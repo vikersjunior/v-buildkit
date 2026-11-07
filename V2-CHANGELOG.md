@@ -1,6 +1,8 @@
 # Viker's BuildKit Changelog
 
-## Unreleased
+## 2.8.0-rc.1 — Crosscheck: review by other vendors' models
+
+Release candidate on npm `next`: `npx vikers-buildkit@next update`. Nothing changes until you run `/crosscheck` or set a `crosscheck` policy; the defaults are `manual`. Customized copies of `feature`, `fix`, `audit` and `complete` show as `update` conflicts.
 
 ### Added
 - `/crosscheck plan` and `/crosscheck review`: independent review by models from other vendors. The method is adapted from model-crosscheck (MIT).
@@ -11,6 +13,15 @@
   - `/feature` and `/fix` record `Base:` and `Sensitive:` lines in the spec.
   - `/audit` adds confirmed critic findings to the ledger.
   - `/complete` runs `.buildkit/bin/review-check.js`. It rebuilds the reviewed diff, including untracked files, from a temporary index and refuses a missing, critic-less or stale receipt. Lint and CI are unaffected.
+  - A rebutted BLOCKER needs a one-line reason, which `/complete` shows. A feature without `acceptance.md` is refused, not reviewed.
+
+### Fixed
+- `doctor` and `status` report a broken `--link` folder as BROKEN on Windows. Without symlink rights (no Developer Mode, not admin), `--link` makes junctions, and Node cannot `lstat` a junction whose target is gone, so they said the folder did not exist. `repair` already fixed it.
+
+### Known issues
+These are fixed in rc.2.
+- Two `add-finding` runs that both find the same lock older than 30 minutes can each remove it. Both may then write `.buildkit/findings.md` at once, and one finding can be lost. This needs a crashed run and two concurrent runs.
+- `/crosscheck` deletes its temp prompts and raw critic outputs only because the skill tells the agent to; the tool doesn't enforce it. They sit in a temp folder outside the project.
 
 ## 2.7.1 — Small fixes from real use
 

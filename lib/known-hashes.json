@@ -10,6 +10,7 @@
   ],
   "files": {
     ".claude/skills/audit/SKILL.md": [
+      "0ea0514532b79a1fa1267a2d4efd3881102f0968dcd9c254d7b4ce08aeab9df5",
       "773ff354a60201140309af7604e09c9b2e0aeb6fa50e58cac29aa85941f5db51"
     ],
     ".claude/skills/check/SKILL.md": [
@@ -18,6 +19,7 @@
     ".claude/skills/complete/SKILL.md": [
       "192bbdbeeb09ba10c09f95dda137b19af3d28c4c83eeaa2e9d8ab913d8714b28",
       "75ee224f332353a2bc54cd15b6d6669cf2dcb528ffdfec93ab6a3c23134598f4",
+      "840139aee7bcaaa88a6ef67873e98a5b1a9957b2417be09798be9c633c0fe3d3",
       "bab697b9a3a948eecd2ea0022b13d833c4902a84650984410d6e1d7c036cd903"
     ],
     ".claude/skills/distill-skill/SKILL.md": [
@@ -28,10 +30,12 @@
     ".claude/skills/feature/SKILL.md": [
       "3dd19558b8a2081f53b0fb062c728d81e0f5d93f6c136ee864c2de36067d5205",
       "885b108769c8e279a3d41960e17054bc4e2157d8848f993f2deb7da549514bb9",
-      "a345c3198fe1864badc48655ebf23ea50b6225c27d36211472f6dfa81c705d40"
+      "a345c3198fe1864badc48655ebf23ea50b6225c27d36211472f6dfa81c705d40",
+      "b4c4a0544db8297a5da9614e01d9109c47fc2c3e81ec433ce4210e234137cf0d"
     ],
     ".claude/skills/fix/SKILL.md": [
-      "0e6efa1a034b0b3005555c631e690e64ef06b1931d473c3acf7b17808d084ba6"
+      "0e6efa1a034b0b3005555c631e690e64ef06b1931d473c3acf7b17808d084ba6",
+      "1c1febb8e1c64a67922e4025a7d0d27aa164228b28af0f204f67e0c89d63b318"
     ],
     ".claude/skills/ideate/SKILL.md": [
       "659b630bc1dd8adb576e9d4869601ee4bc2026bc79c6ede869bbafde425f294a",
@@ -69,6 +73,9 @@
     ".claude/skills/tools-check/SKILL.md": [
       "47e849f2f386ca9d610ec683ea61b8d5b1e20521302f6cc117644f15497f250c",
       "642c7fddc19b1a4e451c9e49732a00bd32bae4f706679a6582e0a64b0cd65654"
+    ],
+    "lib/config.js": [
+      "771fa1d5defa728c99c53ad18047801e63a22b92a267d7bb11bc256a77f9f920"
     ],
     "lib/lint.js": [
       "e264f1404b0ea83645d07fd18e244d7260054eabf8249c9e84429e6c6483d685"
