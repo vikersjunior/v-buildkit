@@ -1,5 +1,17 @@
 # Viker's BuildKit Changelog
 
+## Unreleased
+
+### Added
+- `/crosscheck plan` and `/crosscheck review`: independent review by models from other vendors. The method is adapted from model-crosscheck (MIT).
+  - **Critics:** Codex CLI, and, on opt-in, Antigravity CLI. They run read-only in an empty folder, with the input inlined, and review with two lenses (correctness, and running unattended).
+  - **Your agent** verifies every finding. The vendored `.buildkit/bin/crosscheck.js` writes the receipt and the ledger entries, so every critic field is allow-listed or cleaned, and redacted, in code.
+- `crosscheck` settings in `.buildkit/config.json`: `plan` and `review` each `manual` (default), `when-sensitive` or `blocking`; `vendors` (no default) names who may receive code in gate runs.
+  - Gate runs use Codex only.
+  - `/feature` and `/fix` record `Base:` and `Sensitive:` lines in the spec.
+  - `/audit` adds confirmed critic findings to the ledger.
+  - `/complete` runs `.buildkit/bin/review-check.js`. It rebuilds the reviewed diff, including untracked files, from a temporary index and refuses a missing, critic-less or stale receipt. Lint and CI are unaffected.
+
 ## 2.7.1 — Small fixes from real use
 
 Run `npx vikers-buildkit update`. No skill behaviour changes except `ideate`'s description; a customized `ideate` shows as an `update` conflict.

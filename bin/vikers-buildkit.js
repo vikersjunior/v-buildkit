@@ -25,19 +25,23 @@ const WORKFLOW_SOURCE = path.join(PACKAGE_ROOT, '.claude', 'skills');
 const LIBRARY_SOURCE = path.join(PACKAGE_ROOT, 'skills-library');
 const TEMPLATE_SOURCE = path.join(PACKAGE_ROOT, 'templates');
 
-// The lint checker ships next to the skills (same layout as the package), so /complete runs
+// The lint and crosscheck checkers ship next to the skills (same layout as the package), so /complete runs
 // `node .buildkit/bin/lint.js` from the release that wrote its instructions, with no npx.
 // .buildkit/package.json marks it CommonJS, so it still runs in a project with "type": "module".
 const VENDORED_LINT = {
   'bin/lint.js': 'bin/lint.js',
+  'bin/crosscheck.js': 'bin/crosscheck.js',
+  'bin/review-check.js': 'bin/review-check.js',
   'lib/lint.js': 'lib/lint.js',
   'lib/config.js': 'lib/config.js',
+  'lib/crosscheck.js': 'lib/crosscheck.js',
+  'lib/critics.js': 'lib/critics.js',
   'package.json': 'lib/buildkit-package.json'
 };
 
 const WORKFLOW_SKILLS = [
   'spec-driven-dev', 'ideate', 'spec-init', 'spec-review', 'feature',
-  'implement', 'check', 'audit', 'complete', 'progress', 'tools-check', 'distill-skill', 'fix', 'investigate'
+  'implement', 'check', 'audit', 'complete', 'progress', 'tools-check', 'distill-skill', 'fix', 'investigate', 'crosscheck'
 ];
 
 const AGENTS = {

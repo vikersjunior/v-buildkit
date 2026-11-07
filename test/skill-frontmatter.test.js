@@ -10,7 +10,7 @@ const { spawnSync } = require('node:child_process');
 const ROOT = path.resolve(__dirname, '..');
 const SKILLS = path.join(ROOT, '.claude', 'skills');
 const CLI = path.join(ROOT, 'bin', 'vikers-buildkit.js');
-const GATES = ['feature', 'check', 'audit', 'complete', 'fix', 'investigate'];
+const GATES = ['feature', 'check', 'audit', 'complete', 'fix', 'investigate', 'crosscheck'];
 // Built-in or bundled command names in agents BuildKit installs into (Claude Code bundles /debug, for one).
 // A skill folder with one of these names would shadow or be shadowed by the agent's own command.
 const RESERVED_NAMES = ['debug', 'review', 'code-review', 'verify', 'run', 'simplify', 'doctor', 'status', 'batch', 'loop', 'init', 'help', 'compact', 'config'];

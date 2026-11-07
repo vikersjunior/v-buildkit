@@ -269,6 +269,7 @@ Run these workflow skills directly inside your AI coding agent environment:
 | **`/complete`** | Formally close a feature, record history, and log progress. |
 | **`/investigate`** | Reproduce and localize a bug without editing anything. |
 | **`/fix`** | Write a short fix spec for a bug or small change, then stop for approval. |
+| **`/crosscheck`** | Have models from other vendors review the spec (`plan`) or the code changes (`review`), with a receipt `/complete` can require. |
 | **`/progress`** | Read out current project progress and feature status. |
 | **`/spec-review`** | Check specification files for internal drift. |
 | **`/tools-check`** | Audit active capability skills against project requirements. |
@@ -360,6 +361,48 @@ Findings about a line in a file give the file and line number. Lint exits with s
 - name: Check BuildKit specs
   run: npx vikers-buildkit lint --strict
 ```
+
+### Crosscheck: independent review by other models
+
+`/crosscheck plan` and `/crosscheck review` have models from other vendors critique the current feature's spec, or its code changes, independently. Each critic reviews twice, with two lenses: is it right, and would you let it run unattended?
+
+- **Your agent** verifies every finding before using it and records a receipt in `.buildkit/features/<slug>/review.md` (or `plan-review.md`).
+- **The ledger** gets confirmed findings with their source.
+- **`/complete`** can require a receipt that still matches the current work.
+
+The method is adapted from [model-crosscheck](https://github.com/SameerKhan/model-crosscheck) (MIT).
+
+| Critic | When it runs |
+|---|---|
+| Codex CLI (OpenAI) | `/crosscheck` runs you start, and gate-triggered runs. Read-only sandbox, no web search. |
+| Antigravity CLI (Google) | Only runs you start, and only with `"google"` in `crosscheck.vendors` or `--allow-web`. Its Google web search can't be turned off. |
+
+A critic never reviews work from its own vendor's agent. The Gemini CLI and Claude Code CLI aren't supported as critics yet.
+
+Gates are opt-in, in `.buildkit/config.json`:
+
+```json
+{ "crosscheck": { "plan": "manual", "review": "when-sensitive", "vendors": ["openai"] } }
+```
+
+`plan` and `review` each take one of three values:
+
+- `manual` (default): only when you type `/crosscheck`.
+- `when-sensitive`: `/feature`, `/fix` or `/audit` runs it when the spec says `Sensitive: yes`, or has no `Sensitive:` line.
+- `blocking`: always.
+
+`vendors` lists who may receive your code in gate runs. It has no default, so turning a gate on is a deliberate choice.
+
+`/complete` runs `node .buildkit/bin/review-check.js` and refuses when a required receipt is missing, has no critics, or was written for a different spec or diff. Lint and CI are unaffected.
+
+**What leaves your machine.**
+
+- **Before each run:** your agent shows which critics, files and byte count it's about to send, and how many lines were redacted. `--show` prints the full payload first.
+- **Never sent:** files like `.env*`, `*.pem`, `*.key` and `id_*`, plus anything git-ignored.
+- **Redaction:** common credential shapes are replaced in the input and in critic output. This is best-effort, so don't enable crosscheck where secrets live in source.
+- **Standing risks** (see `references/standing-risks.md`):
+  - Codex's sandbox restricts writes, not reads. That's unverified on macOS and Linux.
+  - Antigravity can run web searches.
 
 ### Findings Ledger
 

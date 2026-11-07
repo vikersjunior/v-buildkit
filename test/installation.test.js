@@ -15,7 +15,7 @@ function makeTmpDir() {
 
 const WORKFLOW_SKILLS = [
   'spec-driven-dev', 'ideate', 'spec-init', 'spec-review', 'feature',
-  'implement', 'check', 'audit', 'complete', 'progress', 'tools-check', 'distill-skill', 'fix', 'investigate'
+  'implement', 'check', 'audit', 'complete', 'progress', 'tools-check', 'distill-skill', 'fix', 'investigate', 'crosscheck'
 ];
 
 test('Installation on clean empty project creates workflow skills and skills library', () => {

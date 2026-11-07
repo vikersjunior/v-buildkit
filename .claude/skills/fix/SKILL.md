@@ -25,6 +25,8 @@ Context reuse: if a file this skill needs was already read in this session and h
    ```
    # Fix: <one-line summary>
    Type: fix
+   Base: <output of `git rev-parse HEAD`>
+   Sensitive: <yes|no>
 
    ## Problem
    ## Cause
@@ -42,5 +44,7 @@ Context reuse: if a file this skill needs was already read in this session and h
    ```
 
    `acceptance.md`: `AC-01` states, observably, that the reported problem no longer occurs. Add `AC-02`, a test or reproduction that failed before and passes after, when the project has a test framework, plus any regression criterion the change needs.
+   Fill `Sensitive:` with yes when the work touches authentication, data handling, user input, payments, or external API or network calls; otherwise no.
 6. Write `.buildkit/state.md` last, after both files exist: Current Feature `fix-<slug>`, `Lifecycle Gate: awaiting approval`.
+6a. Run `node .buildkit/bin/crosscheck.js policy`. If it reports `plan: true`, follow `.buildkit/workflow-skills/crosscheck/references/gates.md` before stopping.
 7. STOP. Do not write application code. Report the spec in a few lines, then wait for explicit approval (`/implement` records it in `state.md`). Tell the user the loop that follows: `/implement` → `/check` → `/complete`. If this fix targets a `BLOCKING` finding, the loop is `/implement` → `/check` → `/audit` → `/complete`, because only `/audit` can close the finding that `/implement` marks `fixed`.

@@ -84,7 +84,7 @@ test('update adds /fix and /investigate to an older install, and lint accepts a 
     assert.match(lint.stdout, /Current Feature "fix-login-typo" has a feature folder/);
 
     const doctor = run('doctor', tmp);
-    assert.match(doctor.stdout, /All 14 workflow skills present/);
+    assert.match(doctor.stdout, /All 15 workflow skills present/);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
