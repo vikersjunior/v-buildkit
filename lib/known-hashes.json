@@ -5,7 +5,8 @@
     "2.6.0",
     "2.7.0-rc.1",
     "2.7.0-rc.2",
-    "2.7.0-rc.3"
+    "2.7.0-rc.3",
+    "2.7.0"
   ],
   "files": {
     ".claude/skills/audit/SKILL.md": [
@@ -33,6 +34,7 @@
       "0e6efa1a034b0b3005555c631e690e64ef06b1931d473c3acf7b17808d084ba6"
     ],
     ".claude/skills/ideate/SKILL.md": [
+      "659b630bc1dd8adb576e9d4869601ee4bc2026bc79c6ede869bbafde425f294a",
       "b134f953e68b2571966049105525c4999312b095e26433cd280eb54d20d02086"
     ],
     ".claude/skills/implement/SKILL.md": [
