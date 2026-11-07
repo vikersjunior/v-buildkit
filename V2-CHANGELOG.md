@@ -1,6 +1,8 @@
 # Viker's BuildKit Changelog
 
-## Unreleased
+## 2.7.1 — Small fixes from real use
+
+Run `npx vikers-buildkit update`. No skill behaviour changes except `ideate`'s description; a customized `ideate` shows as an `update` conflict.
 
 ### Fixed
 - `install` creates `.buildkit/state.md`, and `update` and `repair` restore it when it's missing; an existing one is never overwritten. A project upgraded from an older install could have none until `/fix` or `/feature` wrote one.
