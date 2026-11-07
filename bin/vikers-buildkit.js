@@ -281,7 +281,11 @@ function listFiles(dir, prefix = '') {
 }
 
 function isSymlinkPath(file) {
-  try { return fs.lstatSync(file).isSymbolicLink(); } catch { return false; }
+  try { return fs.lstatSync(file).isSymbolicLink(); } catch {}
+  // lstat fails with ENOENT on a dangling Windows junction; the parent folder's entry still lists it.
+  try {
+    return fs.readdirSync(path.dirname(file), { withFileTypes: true }).some(e => e.name === path.basename(file) && e.isSymbolicLink());
+  } catch { return false; }
 }
 
 // Every file BuildKit owns in the target, as posix relPath -> package source file,
@@ -770,16 +774,11 @@ function status(options) {
     if (!cfg) continue;
     const dest = path.join(target, cfg.path);
     let state = 'Not present';
-    try {
-      const stat = fs.lstatSync(dest);
-      if (stat.isSymbolicLink()) {
-        let valid = false;
-        try { valid = fs.existsSync(dest); } catch {}
-        state = valid ? 'Linked (Valid)' : 'Linked (BROKEN target)';
-      } else if (stat.isDirectory()) {
-        state = 'Installed (Copied)';
-      }
-    } catch {}
+    if (isSymlinkPath(dest)) {
+      state = fs.existsSync(dest) ? 'Linked (Valid)' : 'Linked (BROKEN target)';
+    } else {
+      try { if (fs.lstatSync(dest).isDirectory()) state = 'Installed (Copied)'; } catch {}
+    }
     console.log(`  ${cfg.label.padEnd(24)} (${cfg.path}/): ${state}`);
   }
 
@@ -914,10 +913,10 @@ function doctor(options) {
     let destStat = null;
     try { destStat = fs.lstatSync(dest); } catch {}
 
-    if (!destStat) {
-      check(false, '', `Agent folder ${cfg.path}/ for ${agent} does not exist`);
-    } else if (destStat.isSymbolicLink()) {
+    if (isSymlinkPath(dest)) {
       check(fs.existsSync(dest), `Linked folder ${cfg.path}/ points to valid target`, `Linked folder ${cfg.path}/ is BROKEN`);
+    } else if (!destStat) {
+      check(false, '', `Agent folder ${cfg.path}/ for ${agent} does not exist`);
     } else {
       let missingInAgent = [];
       for (const skill of WORKFLOW_SKILLS) {
