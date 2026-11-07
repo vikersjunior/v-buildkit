@@ -322,3 +322,19 @@ test('a rebuttal needs a reason, names a real BLOCKER, and its reason is cleaned
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('a missing acceptance.md fails closed: no receipt, no gate pass', () => {
+  const { root, base } = fixture({ plan: 'blocking' });
+  try {
+    const legs = both(root, base);
+    xc.writeReceipt(root, { kind: 'review', slug: 'login', host: 'claude', legs });
+    fs.rmSync(require('node:path').join(root, '.buildkit/features/login/acceptance.md'));
+    assert.throws(() => xc.writeReceipt(root, { kind: 'review', slug: 'login', host: 'claude', legs }), /acceptance\.md missing; run \/feature first/);
+    assert.throws(() => xc.writeReceipt(root, { kind: 'plan', slug: 'login', host: 'claude', legs }), /acceptance\.md missing/);
+    const c = check(root);
+    assert.equal(c.ok, false);
+    assert.match(c.text, /\[FAIL\] Crosscheck: \.buildkit\/features\/login\/acceptance\.md missing; run \/feature first/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

@@ -97,6 +97,27 @@ test('the vendored crosscheck tools work end to end in an installed project', ()
 
     const check = spawnSync(process.execPath, [path.join(tmp, '.buildkit', 'bin', 'review-check.js')], { encoding: 'utf8' });
     assert.equal(check.status, 0, check.stdout + check.stderr);
+
+    // A lock left by a crashed run (older than 2x the critic timeout) is replaced with a warning;
+    // a fresh one held by another run is respected.
+    const lock = path.join(tmp, '.buildkit', 'findings.md.lock');
+    fs.writeFileSync(lock, JSON.stringify({ pid: 999999, created: Date.now() - 31 * 60 * 1000 }));
+    const stale = xc('add-finding', '--leg', 'codex-B', '--index', '0');
+    assert.equal(stale.status, 0, stale.stderr);
+    assert.match(stale.stderr, /replacing a stale lock/);
+    assert.equal(JSON.parse(stale.stdout).id, 'F-002');
+    assert.ok(!fs.existsSync(lock), 'lock released');
+    fs.writeFileSync(lock, JSON.stringify({ pid: 999999, created: Date.now() }));
+    const held = xc('add-finding', '--leg', 'codex-B', '--index', '0');
+    assert.notEqual(held.status, 0);
+    assert.match(held.stderr, /held by another run/);
+    fs.rmSync(lock);
+
+    // Without acceptance criteria the prompt is refused, like the receipt and the gate.
+    fs.rmSync(path.join(fdir, 'acceptance.md'));
+    const noAc = xc('prompt', 'plan', '--lens', 'A', '--out', path.join(tmp, '..', `xc-noac-${process.pid}.txt`));
+    assert.notEqual(noAc.status, 0);
+    assert.match(noAc.stderr, /acceptance\.md missing; run \/feature first/);
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
@@ -122,6 +143,7 @@ test('skill text: plan and review only, verified launchers, gates wired, credit 
   const main = skill('crosscheck/SKILL.md');
   assert.match(main, /`\/crosscheck plan`/);
   assert.match(main, /`\/crosscheck review`/);
+  assert.match(main, /\*\*Clean up:\*\* delete the temp folder/);
   assert.doesNotMatch(main + skill('crosscheck/references/critics.md'), /\bdecide\b/, 'decide ships in 2.8.x, not 2.8.0');
   const critics = skill('crosscheck/references/critics.md');
   for (const flag of ['-s read-only', '--ephemeral', '--ignore-user-config', '--output-schema', '--sandbox --mode plan', '"mcp"', '--print-timeout 12m', 'empty']) assert.ok(critics.includes(flag), flag);

@@ -96,6 +96,7 @@ function prompt(root, kind, opts) {
     } else {
       const slug = opts.slug || currentSlug(root);
       const f = xc.readFeature(root, slug);
+      if (f.acceptance === null) throw new Error(`.buildkit/features/${slug}/acceptance.md missing; run /feature first`);
       parts.push([`.buildkit/features/${slug}/spec.md`, f.spec], [`.buildkit/features/${slug}/acceptance.md`, f.acceptance]);
     }
     const joined = parts.map(([rel, text]) => `===== FILE: ${rel} =====\n${text}`).join('\n');
@@ -151,8 +152,18 @@ function addFinding(root, opts) {
   // One writer at a time: concurrent runs would otherwise pick the same ID or overwrite each other.
   const lock = `${ledgerFile}.lock`;
   for (let tries = 0; ; tries++) {
-    try { fs.writeFileSync(lock, String(process.pid), { flag: 'wx' }); break; } catch (e) {
-      if (e.code !== 'EEXIST' || tries >= 50) throw new Error(`${lock} is held by another run; retry, or delete it if no run is active`);
+    try { fs.writeFileSync(lock, JSON.stringify({ pid: process.pid, created: Date.now() }), { flag: 'wx' }); break; } catch (e) {
+      if (e.code !== 'EEXIST') throw e;
+      // A lock older than 2x the critic timeout belongs to a crashed run: replace it.
+      let created;
+      try { created = JSON.parse(fs.readFileSync(lock, 'utf8')).created; } catch {}
+      if (!Number.isFinite(created)) { try { created = fs.statSync(lock).mtimeMs; } catch { continue; } }
+      if (Date.now() - created > 2 * xc.CRITIC_TIMEOUT_MS) {
+        console.error(`warning: replacing a stale lock ${path.basename(lock)} (${Math.round((Date.now() - created) / 60000)} min old)`);
+        fs.rmSync(lock, { force: true });
+        continue;
+      }
+      if (tries >= 50) throw new Error(`${lock} is held by another run; retry, or delete it if no run is active`);
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
     }
   }

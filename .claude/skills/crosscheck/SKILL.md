@@ -30,5 +30,6 @@ All commands below are `node .buildkit/bin/crosscheck.js …`, run from the proj
 6. **Receipt** (not for `plan <file>`): `receipt <plan|review> --host <agent> --leg <critic>,<lens>,<model>,<tmp>/out/<critic>-<lens>.json …`. Add `--rebut <critic>-<lens>:<n>=<one-line reason>` for each BLOCKER that you refuted and the critic conceded. The reason is required; it is stored in the receipt, and `/complete` shows it to the user. The command cleans and redacts every critic field, drops malformed findings and swaps the receipt in atomically. Use its `findings` list (with keys) from here on.
 7. **Ledger** (review only): add each confirmed BLOCKER or SHOULD with `add-finding --leg <critic>-<lens> --index <n>`. Add `--security` when the finding concerns security or data loss. Never write critic text into `.buildkit/findings.md` yourself.
 8. **Report:** the verdict per critic × lens, confirmed findings with their ledger IDs, rebutted points, the dropped count, and anything that could not be reviewed.
+9. **Clean up:** delete the temp folder (prompts and raw critic outputs) when the run ends for any reason, including a failed or refused leg. The cleaned leg files the receipt keeps in `.buildkit/features/<slug>/review/` stay git-ignored.
 
 Standing risks for every run are in `references/standing-risks.md`. Credits are in `references/NOTICE.md`.
