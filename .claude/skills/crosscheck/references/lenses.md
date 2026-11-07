@@ -45,7 +45,7 @@ For each finding you reject after checking the code, send its critic **one** fol
 
 A reply that doesn't quote the finding is a failed reply.
 
-- **Concede:** drop the finding. For a BLOCKER, pass `--rebut <critic>-<lens>:<n>` to the receipt.
+- **Concede:** drop the finding. For a BLOCKER, pass `--rebut <critic>-<lens>:<n>=<one-line reason>` to the receipt. `/complete` prints every rebutted BLOCKER with its reason.
 - **Defend:** check again. If you still disagree, report the finding as disputed with both positions; the user decides, and the finding stays in the receipt.
 
 There is one round only.

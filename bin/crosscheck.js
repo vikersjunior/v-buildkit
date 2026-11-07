@@ -17,7 +17,7 @@ const USAGE = `Usage: node .buildkit/bin/crosscheck.js <command> [options]
   policy   [--slug <s>]                                      which gates apply to the feature (JSON)
   select   [--gate] [--host <agent>] [--allow-web]          critics for this run (JSON)
   prompt   <plan|review> --lens <A|B> [--slug <s>] [--file <path>] [--format text|agy] --out <file>
-  receipt  <plan|review> --slug <s> --host <agent> --leg <critic>,<lens>,<model>,<output file> ... [--rebut <critic-lens:index>]
+  receipt  <plan|review> --slug <s> --host <agent> --leg <critic>,<lens>,<model>,<output file> ... [--rebut <critic>-<lens>:<index>=<reason>]
   add-finding --slug <s> --leg <critic-lens> --index <n> [--security]
   check                                                     the /complete gate (exit 1 on failure)
 Options: --project <dir> (default: the project this copy is vendored into)`;
@@ -64,7 +64,10 @@ function containedFile(root, file) {
 }
 
 function lensTemplate(root, kind, lens) {
-  const file = path.join(root, '.buildkit', 'workflow-skills', 'crosscheck', 'references', 'lenses.md');
+  const vendored = path.join(root, '.buildkit', 'workflow-skills', 'crosscheck', 'references', 'lenses.md');
+  // From the package source (BuildKit reviewing itself), the templates sit next to this file.
+  const source = path.join(__dirname, '..', '.claude', 'skills', 'crosscheck', 'references', 'lenses.md');
+  const file = fs.existsSync(vendored) ? vendored : source;
   const text = fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
   const m = text.match(new RegExp(`### Lens ${lens} — ${kind}\\n+\`\`\`text\\n([\\s\\S]*?)\\n\`\`\``));
   if (!m) throw new Error(`lens ${lens} for ${kind} not found in ${file}`);
