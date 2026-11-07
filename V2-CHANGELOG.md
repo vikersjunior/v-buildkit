@@ -1,5 +1,17 @@
 # Viker's BuildKit Changelog
 
+## Unreleased
+
+### Fixed
+- `install` creates `.buildkit/state.md`, and `update` and `repair` restore it when it's missing; an existing one is never overwritten. A project upgraded from an older install could have none until `/fix` or `/feature` wrote one.
+- Local publishes can no longer ship a developer's `.claude/settings.local.json`: `package.json` `files` now excludes it. npm ignores `.git/info/exclude`, so `npm pack` would have included it; the 2.7.0 tarball on npm doesn't. A test checks every packed path.
+
+### Changed
+- `ideate` also names startup ideas and "poke holes in it", so a request to stress-test an early idea goes to `ideate` rather than `distill-skill`. Routing evals: train 30/32 → 31/32, `ideate` 4/6, holdout unchanged; `floor.json` raised.
+
+### Documentation
+- README: projects on exFAT or FAT drives, where `--link` and pnpm's linked layout can't work, and how to avoid pnpm stripping `node_modules` when agents run project commands.
+
 ## 2.7.0 — Enforceable Gates and Small Fixes
 
 ### Changed

@@ -148,6 +148,13 @@ Share one canonical `.buildkit/workflow-skills/` directory across multiple codin
 npx vikers-buildkit install . --agent claude,codex,cursor --link
 ```
 
+### Projects on exFAT or FAT drives
+
+exFAT and FAT drives (common on external disks shared between macOS and Windows) can't hold symlinks or junctions. Two consequences:
+
+- `--link` doesn't work there; use the default copy mode.
+- pnpm's default `isolated` layout needs links too. pnpm 12 runs an install before every `pnpm run` or `pnpm exec`, and on these drives that install fails part-way and strips `node_modules`. Agents run project commands during `/investigate`, `/implement` and `/check`, so this can happen mid-task. Install with `pnpm install --config.node-linker=hoisted` (files are copied, not linked), and have agents run tools as `node node_modules/<tool>/...` instead of `pnpm run`/`pnpm exec`. Git may also refuse the repository ("dubious ownership", because exFAT records no owners); pass `-c safe.directory=<path>` per command rather than changing your global git config.
+
 ### Scripted / Non-Interactive (CI)
 
 ```bash

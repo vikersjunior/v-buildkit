@@ -405,3 +405,30 @@ test('update on a pre-manifest install treats a published older skill as unmodif
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+test('install creates .buildkit/state.md, update and repair restore a missing one, and none overwrite it', () => {
+  const tmp = installed();
+  try {
+    const state = path.join(tmp, '.buildkit', 'state.md');
+    const template = fs.readFileSync(path.join(__dirname, '..', '.buildkit', 'state.md'), 'utf8');
+    assert.equal(fs.readFileSync(state, 'utf8'), template, 'install writes the template');
+
+    fs.rmSync(state);
+    let res = run('update', tmp);
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    assert.match(res.stdout, /Created missing \.buildkit\/state\.md/);
+    assert.equal(fs.readFileSync(state, 'utf8'), template);
+
+    fs.rmSync(state);
+    res = run('repair', tmp, '--skip-capabilities');
+    assert.equal(res.status, 0, res.stdout + res.stderr);
+    assert.ok(fs.existsSync(state), 'repair restores it');
+
+    fs.writeFileSync(state, '# my state\n');
+    assert.equal(run('update', tmp).status, 0);
+    assert.equal(run('repair', tmp, '--skip-capabilities').status, 0);
+    assert.equal(fs.readFileSync(state, 'utf8'), '# my state\n', 'an existing state.md is never overwritten');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});

@@ -1,6 +1,6 @@
 {
-  "overall": 37,
-  "train": 30,
+  "overall": 38,
+  "train": 31,
   "holdout": 7,
   "perSkill": {
     "distill-skill": {
@@ -8,7 +8,7 @@
       "holdout": 1
     },
     "ideate": {
-      "train": 3,
+      "train": 4,
       "holdout": 0
     },
     "implement": {
@@ -54,6 +54,7 @@
     "have any unconfirmed assumptions been left in the documents",
     "help me brainstorm directions for a side project about dog walkers",
     "how far along is the build",
+    "is this startup notion any good? poke holes in it with me",
     "keep going on the build",
     "kick off a brand new recipe sharing site, nothing exists yet",
     "look for contradictions between the architecture doc and the stack doc",

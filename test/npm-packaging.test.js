@@ -79,3 +79,21 @@ test('npm pack creates valid tarball that can be installed and executed', () => 
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+test('the packed file list holds only shipped paths, never local agent settings', () => {
+  // A developer's .claude/settings.local.json sits next to the shipped .claude/skills/. npm ignores
+  // .git/info/exclude, so only the "!" entry in package.json files keeps it out of a local publish.
+  const local = path.join(REPO_ROOT, '.claude', 'settings.local.json');
+  const created = !fs.existsSync(local);
+  if (created) fs.writeFileSync(local, '{}\n');
+  try {
+    const res = run('npm', ['pack', '--dry-run', '--json'], { cwd: REPO_ROOT, encoding: 'utf8' });
+    assert.equal(res.status, 0, res.stderr);
+    const files = JSON.parse(res.stdout.slice(res.stdout.indexOf('['))).flatMap(p => p.files.map(f => f.path));
+    assert.ok(!files.includes('.claude/settings.local.json'), 'settings.local.json must not be packed');
+    const allowed = /^(bin\/|lib\/|\.claude\/skills\/|\.buildkit\/|skills-library\/|templates\/)|^(install\.sh|README\.md|LICENSE|THIRD_PARTY_NOTICES\.md|V2-CHANGELOG\.md|package\.json)$/;
+    assert.deepEqual(files.filter(f => !allowed.test(f)), [], 'unexpected paths in the package');
+  } finally {
+    if (created) fs.rmSync(local);
+  }
+});

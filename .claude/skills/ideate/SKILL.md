@@ -1,6 +1,6 @@
 ---
 name: ideate
-description: Turns a rough or early idea into a brief that spec-init can act on; writes none of the six spec files. Use for /ideate, "I have an idea for...", "not sure what this should be yet", or requests to brainstorm, critique, validate or refine a concept and judge whether it is worth building. If the user already has a clear project description, use spec-init instead.
+description: Turns a rough or early idea into a brief that spec-init can act on; writes none of the six spec files. Use for /ideate, "I have an idea for...", "not sure what this should be yet", or requests to brainstorm, critique, validate or refine a startup idea or concept, poke holes in it, and judge whether it is worth building. If the user already has a clear project description, use spec-init instead.
 ---
 
 # Ideate — Turning a Vague Idea into a Buildable Brief
