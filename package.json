@@ -23,7 +23,8 @@
     "README.md",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",
-    "V2-CHANGELOG.md"
+    "V2-CHANGELOG.md",
+    "!.claude/settings.local.json"
   ],
   "engines": {
     "node": ">=22"

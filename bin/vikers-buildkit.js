@@ -215,6 +215,15 @@ function copyVendoredLint(target) {
   for (const [rel, source] of Object.entries(VENDORED_LINT)) copyFileAtomic(path.join(PACKAGE_ROOT, ...source.split('/')), path.join(target, '.buildkit', ...rel.split('/')));
 }
 
+// .buildkit/state.md is the project's execution state: created from the template when missing, never
+// overwritten. lstat first, so a dangling link at that path counts as present and is left alone.
+function ensureStateFile(target) {
+  const dest = path.join(target, '.buildkit', 'state.md');
+  try { fs.lstatSync(dest); return false; } catch {}
+  fs.copyFileSync(path.join(PACKAGE_ROOT, '.buildkit', 'state.md'), dest, fs.constants.COPYFILE_EXCL);
+  return true;
+}
+
 function copyFile(source, dest) {
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   fs.copyFileSync(source, dest);
@@ -699,6 +708,7 @@ function install(options) {
   copyDir(WORKFLOW_SOURCE, workflowRoot);
   copyDir(LIBRARY_SOURCE, libraryRoot);
   copyVendoredLint(target);
+  ensureStateFile(target);
   for (const agent of agents) installAgent(target, workflowRoot, agent, options.link);
   writeManifest(target, agents);
   writeAgentConfig(target, agents);
@@ -948,6 +958,7 @@ function repair(options) {
   copyDir(WORKFLOW_SOURCE, workflowRoot);
   copyDir(LIBRARY_SOURCE, libraryRoot);
   copyVendoredLint(target);
+  if (ensureStateFile(target)) console.log('✓ Created missing .buildkit/state.md');
   console.log('✓ Restored .buildkit/workflow-skills, .buildkit/skills-library and .buildkit/bin/lint.js');
 
   let configured = getConfiguredAgents(target);
@@ -1033,6 +1044,7 @@ function update(options) {
   fs.mkdirSync(absDocsRoot, { recursive: true });
 
   const backupDir = applyUpdatePlan(target, plan, force);
+  if (ensureStateFile(target)) console.log('✓ Created missing .buildkit/state.md');
   writeManifest(target, configured);
   console.log(`✓ Added ${plan.add.length}, updated ${plan.update.length}, removed ${plan.remove.length}, unchanged ${plan.unchanged.length} managed file(s)`);
   if (backupDir) console.log(`✓ Replaced ${plan.conflict.length} locally modified file(s); originals backed up to ${path.relative(target, backupDir)}/`);
