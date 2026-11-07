@@ -89,4 +89,9 @@ test('redaction never eats the rest of an ordinary line, and removes a whole PEM
   assert.equal(redact(code).text, code, 'source code that mentions the pattern is left intact');
   const pem = 'a\n-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA\n-----END RSA PRIVATE KEY-----\nb';
   assert.equal(redact(pem).text, 'a\n[REDACTED]\nb');
+  // A BEGIN string early in a file and an END string much later must not swallow the code between.
+  const spread = "x = '-----BEGIN PRIVATE KEY-----';\nfor (const s of list) {\n  run(s);\n}\ny = '-----END RSA PRIVATE KEY-----';";
+  const out = redact(spread).text;
+  assert.match(out, /for \(const s of list\) \{/);
+  assert.match(out, /-----END RSA PRIVATE KEY-----/);
 });

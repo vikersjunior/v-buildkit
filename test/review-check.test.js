@@ -281,3 +281,19 @@ test('the gate requires both lenses per critic and refuses a critic from the hos
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('a binary file changed after the review makes the receipt stale, though it is never sent', () => {
+  const { root, base } = fixture();
+  try {
+    fs.writeFileSync(path.join(root, 'logo.png'), Buffer.from([0, 1, 2, 3, 0, 255]));
+    const p = xc.buildPatch(root, base);
+    assert.ok(p.excluded.includes('logo.png'), 'binary left out of the patch');
+    assert.doesNotMatch(p.patch, /logo\.png/);
+    xc.writeReceipt(root, { kind: 'review', slug: 'login', host: 'claude', legs: both(root, base) });
+    assert.equal(check(root).ok, true);
+    fs.writeFileSync(path.join(root, 'logo.png'), Buffer.from([0, 9, 9, 9, 0, 255]));
+    assert.match(check(root).text, /left out of the review \(binary or secrets-like\) changed/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

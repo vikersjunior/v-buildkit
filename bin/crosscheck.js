@@ -145,11 +145,25 @@ function addFinding(root, opts) {
   const severity = xc.mapSeverity(finding.grade, { securityOrDataLoss: Boolean(opts.security) });
   if (!severity) throw new Error('NIT findings are not recorded in the ledger');
   const ledgerFile = path.join(root, '.buildkit', 'findings.md');
-  const ledger = fs.existsSync(ledgerFile) ? fs.readFileSync(ledgerFile, 'utf8') : '# Findings\n\n';
-  const id = xc.nextFindingId(ledger);
-  const entry = xc.formatLedgerEntry({ id, severity, feature: slug, finding, source: { critic: leg.critic, model: leg.model, lens: leg.lens }, date: new Date().toISOString().slice(0, 10) });
-  fs.writeFileSync(ledgerFile, ledger.replace(/\n*$/, '\n\n') + entry);
-  return { id, severity };
+  // One writer at a time: concurrent runs would otherwise pick the same ID or overwrite each other.
+  const lock = `${ledgerFile}.lock`;
+  for (let tries = 0; ; tries++) {
+    try { fs.writeFileSync(lock, String(process.pid), { flag: 'wx' }); break; } catch (e) {
+      if (e.code !== 'EEXIST' || tries >= 50) throw new Error(`${lock} is held by another run; retry, or delete it if no run is active`);
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
+    }
+  }
+  try {
+    const ledger = fs.existsSync(ledgerFile) ? fs.readFileSync(ledgerFile, 'utf8') : '# Findings\n\n';
+    const id = xc.nextFindingId(ledger);
+    const entry = xc.formatLedgerEntry({ id, severity, feature: slug, finding, source: { critic: leg.critic, model: leg.model, lens: leg.lens }, date: new Date().toISOString().slice(0, 10) });
+    const tmp = `${ledgerFile}.tmp-${crypto.randomBytes(6).toString('hex')}`;
+    fs.writeFileSync(tmp, ledger.replace(/\n*$/, '\n\n') + entry, { flag: 'wx' });
+    fs.renameSync(tmp, ledgerFile);
+    return { id, severity };
+  } finally {
+    fs.rmSync(lock, { force: true });
+  }
 }
 
 function main(argv) {
